@@ -357,6 +357,9 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean
+          is_deleted_by_admin: boolean | null
+          original_rating: number | null
+          original_testimonial_text: string | null
           rating: number
           route_taken: string | null
           testimonial_text: string
@@ -372,6 +375,9 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_deleted_by_admin?: boolean | null
+          original_rating?: number | null
+          original_testimonial_text?: string | null
           rating?: number
           route_taken?: string | null
           testimonial_text: string
@@ -387,6 +393,9 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_deleted_by_admin?: boolean | null
+          original_rating?: number | null
+          original_testimonial_text?: string | null
           rating?: number
           route_taken?: string | null
           testimonial_text?: string
