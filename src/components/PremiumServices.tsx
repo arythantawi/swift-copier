@@ -119,7 +119,7 @@ const PremiumServices = () => {
               {eventServices.map((service, index) => (
                 <div
                   key={index}
-                  className="event-badge flex items-center gap-1.5 md:gap-2 p-2 md:p-3 bg-secondary/50 rounded-lg md:rounded-xl hover:bg-secondary transition-colors cursor-default"
+                  className="event-badge flex items-center gap-1.5 md:gap-2 p-2 md:p-3 bg-white rounded-lg md:rounded-xl hover:bg-secondary/20 transition-colors cursor-default border border-border"
                 >
                   <div className="w-6 h-6 md:w-8 md:h-8 rounded-md md:rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <service.icon className="w-3 h-3 md:w-4 md:h-4 text-primary" />
@@ -146,7 +146,7 @@ const PremiumServices = () => {
               {fleets.map((fleet, index) => (
                 <div
                   key={index}
-                  className="fleet-item flex items-center justify-between p-3 md:p-4 bg-secondary/50 rounded-lg md:rounded-xl hover:bg-secondary transition-colors"
+                  className="fleet-item flex items-center justify-between p-3 md:p-4 bg-white rounded-lg md:rounded-xl hover:bg-secondary/20 transition-colors border border-border"
                 >
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-md md:rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
