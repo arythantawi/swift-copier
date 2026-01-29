@@ -158,7 +158,7 @@ export default {
   					boxShadow: '0 0 40px hsl(38 92% 50% / 0.6)'
   				}
   			},
-  			'shimmer': {
+  			shimmer: {
   				'0%': {
   					backgroundPosition: '-200% 0'
   				},
@@ -174,7 +174,7 @@ export default {
   					backgroundPosition: '-200% center'
   				}
   			},
-  			'scaleUp': {
+  			scaleUp: {
   				'0%': {
   					transform: 'scale(1)'
   				},
@@ -185,7 +185,7 @@ export default {
   					transform: 'scale(1)'
   				}
   			},
-  			'borderSpin': {
+  			borderSpin: {
   				'0%': {
   					transform: 'rotate(0deg)',
   					background: 'conic-gradient(hsl(var(--primary)), transparent 20%)'
@@ -198,7 +198,7 @@ export default {
   					background: 'conic-gradient(hsl(var(--primary)), hsl(var(--primary)))'
   				}
   			},
-  			'reveal': {
+  			reveal: {
   				'0%': {
   					width: '0'
   				},
@@ -214,7 +214,7 @@ export default {
   			'fade-in': 'fade-in 0.5s ease-out forwards',
   			'slide-in-right': 'slide-in-right 0.5s ease-out forwards',
   			'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-  			'shimmer': 'shimmer 2s infinite',
+  			shimmer: 'shimmer 2s infinite',
   			'shimmer-text': 'shimmer-text 3s ease-in-out infinite'
   		}
   	}
