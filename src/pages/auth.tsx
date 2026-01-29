@@ -129,9 +129,7 @@ const Auth = () => {
               <button type="button" onClick={handleGoogleAuth} className="border border-border rounded-full w-10 h-10 flex items-center justify-center hover:bg-secondary transition-colors">
                 <Chrome className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button type="button" className="border border-border rounded-full w-10 h-10 flex items-center justify-center hover:bg-secondary transition-colors opacity-50 cursor-not-allowed" disabled>
-                <Facebook className="w-5 h-5 text-muted-foreground" />
-              </button>
+              
             </div>
             
             <span className="text-xs text-muted-foreground">atau gunakan email untuk pendaftaran</span>
