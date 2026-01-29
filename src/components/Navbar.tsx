@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Phone, Search, User, LogOut, ClipboardList, ChevronDown, Star } from 'lucide-react';
+import { Menu, X, Phone, User, LogOut, ClipboardList, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -38,10 +38,6 @@ const Navbar = () => {
     label: 'Kontak'
   }];
 
-  const trackLink = {
-    to: '/track',
-    label: 'Cek Pesanan'
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -81,10 +77,6 @@ const Navbar = () => {
             {navLinks.map(link => <a key={link.href} href={link.href} className={`font-medium transition-colors hover:text-accent ${isScrolled ? 'text-foreground' : 'text-white/90'}`}>
                 {link.label}
               </a>)}
-            <Link to={trackLink.to} className={`font-medium transition-colors hover:text-accent flex items-center gap-1.5 ${isScrolled ? 'text-foreground' : 'text-white/90'}`}>
-              <Search className="w-4 h-4" />
-              {trackLink.label}
-            </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
@@ -167,10 +159,12 @@ const Navbar = () => {
               {navLinks.map(link => <a key={link.href} href={link.href} className="px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                   {link.label}
                 </a>)}
-              <Link to={user ? "/profile" : "/track"} className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
-                <User className="w-4 h-4" />
-                {user ? 'Profil Saya' : 'Cek Pesanan'}
-              </Link>
+              {user && (
+                <Link to="/profile" className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                  <User className="w-4 h-4" />
+                  Profil Saya
+                </Link>
+              )}
               {user && (
                 <Link to="/my-bookings" className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                   <ClipboardList className="w-4 h-4" />
