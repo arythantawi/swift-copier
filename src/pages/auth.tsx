@@ -159,7 +159,7 @@ const Auth = () => {
                 placeholder="Nama Lengkap"
                 value={signUpName}
                 onChange={(e) => setSignUpName(e.target.value)}
-                className="bg-secondary border-none rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="bg-white border border-border rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
@@ -171,7 +171,7 @@ const Auth = () => {
                 placeholder="Email"
                 value={signUpEmail}
                 onChange={(e) => setSignUpEmail(e.target.value)}
-                className="bg-secondary border-none rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="bg-white border border-border rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
@@ -183,7 +183,7 @@ const Auth = () => {
                 placeholder="Password"
                 value={signUpPassword}
                 onChange={(e) => setSignUpPassword(e.target.value)}
-                className="bg-secondary border-none rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="bg-white border border-border rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 required
                 minLength={6}
               />
@@ -229,7 +229,7 @@ const Auth = () => {
                 placeholder="Email"
                 value={signInEmail}
                 onChange={(e) => setSignInEmail(e.target.value)}
-                className="bg-secondary border-none rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="bg-white border border-border rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
@@ -241,7 +241,7 @@ const Auth = () => {
                 placeholder="Password"
                 value={signInPassword}
                 onChange={(e) => setSignInPassword(e.target.value)}
-                className="bg-secondary border-none rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="bg-white border border-border rounded-md px-10 py-3 my-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
