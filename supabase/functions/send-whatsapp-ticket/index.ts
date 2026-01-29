@@ -144,7 +144,7 @@ serve(async (req) => {
 
     console.log("Sending text message via FlowKirim...");
     
-    const textResponse = await fetch("https://api.flowkirim.com/api/send-message", {
+    const textResponse = await fetch("https://panel.flowkirim.com/api/send-message", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -179,7 +179,7 @@ serve(async (req) => {
 
     console.log("Sending PDF document via FlowKirim...");
     
-    const docResponse = await fetch("https://api.flowkirim.com/api/send-document", {
+    const docResponse = await fetch("https://panel.flowkirim.com/api/send-document", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
