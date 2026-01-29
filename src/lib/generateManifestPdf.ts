@@ -308,10 +308,10 @@ export const generateManifestPdf = async (data: ManifestData): Promise<void> => 
     name: { x: marginLeft + 8, w: 28 },
     phone: { x: marginLeft + 36, w: 24 },
     pax: { x: marginLeft + 60, w: 10 },
-    pickup: { x: marginLeft + 70, w: 48 },
-    dropoff: { x: marginLeft + 118, w: 42 },
-    notes: { x: marginLeft + 160, w: 22 },
-    status: { x: marginLeft + 182, w: 13 },
+    pickup: { x: marginLeft + 70, w: 46 },
+    dropoff: { x: marginLeft + 116, w: 40 },
+    notes: { x: marginLeft + 156, w: 20 },
+    status: { x: marginLeft + 176, w: 19 },
   };
   
   const headerHeight = 8;
@@ -411,20 +411,23 @@ export const generateManifestPdf = async (data: ManifestData): Promise<void> => 
     doc.setFontSize(6);
     doc.text(notesArr.join(',') || '-', cols.notes.x + 1, textY);
 
-    // Payment status
-    doc.setFontSize(6);
+    // Payment status - centered in column
+    doc.setFontSize(5.5);
     const statusLabel = getPaymentLabel(passenger.paymentStatus);
     if (passenger.paymentStatus === 'paid') {
       doc.setTextColor(34, 139, 34); // Green
       doc.setFont('helvetica', 'bold');
     } else if (passenger.paymentStatus === 'pending') {
       doc.setTextColor(200, 150, 0); // Orange
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', 'bold');
     } else {
       doc.setTextColor(...grayColor);
       doc.setFont('helvetica', 'normal');
     }
-    doc.text(statusLabel, cols.status.x + 1, textY);
+    // Center the status text in the column
+    const statusWidth = doc.getTextWidth(statusLabel);
+    const statusX = cols.status.x + (cols.status.w - statusWidth) / 2;
+    doc.text(statusLabel, statusX, textY);
 
     return startY + rowHeight;
   };
