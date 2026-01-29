@@ -15,7 +15,11 @@ import {
   Luggage,
   AlertCircle,
   Send,
-  CheckCircle2
+  CheckCircle2,
+  Edit,
+  GripVertical,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { generateManifestPdf, ManifestData, ManifestPassenger } from '@/lib/generateManifestPdf';
 import { Button } from '@/components/ui/button';
@@ -38,6 +42,16 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Booking {
   id: string;
@@ -74,6 +88,11 @@ interface TripOperation {
   vehicle_number: string | null;
 }
 
+interface EditablePassenger extends ManifestPassenger {
+  id: string;
+  isEditing?: boolean;
+}
+
 const AdminManifest = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [tripOperations, setTripOperations] = useState<TripOperation[]>([]);
@@ -89,11 +108,15 @@ const AdminManifest = () => {
     driverPhone: '',
     vehicleNumber: '',
   });
+  
+  // Edit manifest state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editablePassengers, setEditablePassengers] = useState<EditablePassenger[]>([]);
+  const [editingPassengerId, setEditingPassengerId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch bookings
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
@@ -103,7 +126,6 @@ const AdminManifest = () => {
       if (bookingsError) throw bookingsError;
       setBookings((bookingsData || []) as Booking[]);
 
-      // Fetch trip operations for driver info
       const { data: tripsData, error: tripsError } = await supabase
         .from('trip_operations')
         .select('id, trip_date, route_from, route_to, route_via, pickup_time, driver_name, driver_phone, vehicle_number')
@@ -144,7 +166,6 @@ const AdminManifest = () => {
     return matchesDate && matchesRoute;
   });
 
-  // Group bookings by pickup time and full route (from, via, to)
   const groupedBookings = filteredBookings.reduce((acc, booking) => {
     const key = `${booking.pickup_time}-${booking.route_from}-${booking.route_via || ''}-${booking.route_to}`;
     if (!acc[key]) {
@@ -176,12 +197,30 @@ const AdminManifest = () => {
     }
   };
 
+  // Convert bookings to editable passengers
+  const convertToEditablePassengers = (bookingsGroup: Booking[]): EditablePassenger[] => {
+    return bookingsGroup.map(booking => ({
+      id: booking.id,
+      name: booking.customer_name,
+      phone: booking.customer_phone,
+      pickupAddress: booking.pickup_address,
+      dropoffAddress: booking.dropoff_address,
+      passengers: booking.passengers,
+      notes: booking.notes,
+      hasLargeLuggage: booking.has_large_luggage || false,
+      luggageDescription: booking.luggage_description,
+      hasPackageDelivery: booking.has_package_delivery || false,
+      packageDescription: booking.package_description,
+      specialRequests: booking.special_requests,
+      paymentStatus: booking.payment_status,
+    }));
+  };
+
   const handleOpenManifestDialog = (bookingsGroup: Booking[]) => {
     if (bookingsGroup.length === 0) return;
 
     const firstBooking = bookingsGroup[0];
     
-    // Try to find matching trip operation for driver info
     const matchingTrip = tripOperations.find(trip => 
       trip.trip_date === firstBooking.travel_date &&
       trip.route_from === firstBooking.route_from &&
@@ -197,10 +236,12 @@ const AdminManifest = () => {
     });
 
     setSelectedBookingsGroup(bookingsGroup);
+    setEditablePassengers(convertToEditablePassengers(bookingsGroup));
+    setIsEditMode(false);
+    setEditingPassengerId(null);
     setIsManifestDialogOpen(true);
   };
 
-  // Check if trip already exists in operations
   const isTripProcessed = (bookingsGroup: Booking[]) => {
     if (bookingsGroup.length === 0) return false;
     const firstBooking = bookingsGroup[0];
@@ -212,7 +253,6 @@ const AdminManifest = () => {
     );
   };
 
-  // Get matching trip operation
   const getMatchingTripOperation = (bookingsGroup: Booking[]) => {
     if (bookingsGroup.length === 0) return null;
     const firstBooking = bookingsGroup[0];
@@ -224,32 +264,18 @@ const AdminManifest = () => {
     ) || null;
   };
 
-  // Check if booking data differs from operations
   const hasBookingChanges = (bookingsGroup: Booking[]) => {
     const matchingTrip = getMatchingTripOperation(bookingsGroup);
     if (!matchingTrip) return false;
-
-    const totalPassengers = bookingsGroup.reduce((sum, b) => sum + b.passengers, 0);
-    const paidBookings = bookingsGroup.filter(b => b.payment_status === 'paid');
-    const incomeTickets = paidBookings.reduce((sum, b) => sum + b.total_price, 0);
-
-    // Compare with current operation data (only passengers and income)
-    // We cast to any to access additional properties that might be on the full trip object
-    const tripOp = tripOperations.find(t => t.id === matchingTrip.id);
-    if (!tripOp) return false;
-
-    // Fetch full trip data to compare - for now just return true to allow update
     return true;
   };
 
-  // Process manifest to operations
   const handleProcessToOperations = async (bookingsGroup: Booking[], isUpdate: boolean = false) => {
     if (bookingsGroup.length === 0) return;
 
     const firstBooking = bookingsGroup[0];
     const existingTrip = getMatchingTripOperation(bookingsGroup);
     
-    // Check if already exists and not updating
     if (!isUpdate && existingTrip) {
       toast.error('Trip ini sudah ada di data operasional');
       return;
@@ -257,13 +283,11 @@ const AdminManifest = () => {
 
     setIsProcessing(true);
     try {
-      // Calculate totals
       const totalPassengers = bookingsGroup.reduce((sum, b) => sum + b.passengers, 0);
       const paidBookings = bookingsGroup.filter(b => b.payment_status === 'paid');
       const incomeTickets = paidBookings.reduce((sum, b) => sum + b.total_price, 0);
 
       if (isUpdate && existingTrip) {
-        // Update existing trip - only update passengers and income, keep other expenses
         const updateData = {
           total_passengers: totalPassengers,
           income_tickets: incomeTickets,
@@ -279,7 +303,6 @@ const AdminManifest = () => {
         
         toast.success('Data operasional berhasil diperbarui');
       } else {
-        // Insert new trip
         const tripData = {
           trip_date: firstBooking.travel_date,
           route_from: firstBooking.route_from,
@@ -293,7 +316,7 @@ const AdminManifest = () => {
           expense_ferry: 0,
           expense_snack: 0,
           expense_meals: 0,
-          expense_driver_commission: Math.round(incomeTickets * 0.15), // Default 15%
+          expense_driver_commission: Math.round(incomeTickets * 0.15),
           expense_driver_meals: 0,
           expense_toll: 0,
           expense_parking: 0,
@@ -313,7 +336,7 @@ const AdminManifest = () => {
         toast.success('Data berhasil dikirim ke Operasional');
       }
       
-      fetchData(); // Refresh to update processed status
+      fetchData();
     } catch (error) {
       console.error('Error processing to operations:', error);
       toast.error('Gagal menyimpan data operasional');
@@ -322,24 +345,72 @@ const AdminManifest = () => {
     }
   };
 
-  const handleGenerateManifest = async (bookingsGroup: Booking[]) => {
-    if (bookingsGroup.length === 0) return;
+  // Update passenger in editable list
+  const updateEditablePassenger = (id: string, field: keyof EditablePassenger, value: any) => {
+    setEditablePassengers(prev => 
+      prev.map(p => p.id === id ? { ...p, [field]: value } : p)
+    );
+  };
 
-    const firstBooking = bookingsGroup[0];
+  // Move passenger up/down
+  const movePassenger = (index: number, direction: 'up' | 'down') => {
+    const newList = [...editablePassengers];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
+    
+    [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+    setEditablePassengers(newList);
+  };
 
-    const passengers: ManifestPassenger[] = bookingsGroup.map(booking => ({
-      name: booking.customer_name,
-      phone: booking.customer_phone,
-      pickupAddress: booking.pickup_address,
-      dropoffAddress: booking.dropoff_address,
-      passengers: booking.passengers,
-      notes: booking.notes,
-      hasLargeLuggage: booking.has_large_luggage || false,
-      luggageDescription: booking.luggage_description,
-      hasPackageDelivery: booking.has_package_delivery || false,
-      packageDescription: booking.package_description,
-      specialRequests: booking.special_requests,
-      paymentStatus: booking.payment_status,
+  // Remove passenger from manifest (temporary, not from database)
+  const removePassengerFromManifest = (id: string) => {
+    setEditablePassengers(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Add manual passenger
+  const addManualPassenger = () => {
+    const newPassenger: EditablePassenger = {
+      id: `manual-${Date.now()}`,
+      name: '',
+      phone: '',
+      pickupAddress: '',
+      dropoffAddress: null,
+      passengers: 1,
+      notes: null,
+      hasLargeLuggage: false,
+      luggageDescription: null,
+      hasPackageDelivery: false,
+      packageDescription: null,
+      specialRequests: null,
+      paymentStatus: 'pending',
+      isEditing: true,
+    };
+    setEditablePassengers(prev => [...prev, newPassenger]);
+    setEditingPassengerId(newPassenger.id);
+  };
+
+  const handleGenerateManifest = async () => {
+    if (editablePassengers.length === 0) {
+      toast.error('Tidak ada penumpang untuk dicetak');
+      return;
+    }
+
+    const firstBooking = selectedBookingsGroup[0];
+
+    const passengers: ManifestPassenger[] = editablePassengers.map(p => ({
+      name: p.name,
+      phone: p.phone,
+      pickupAddress: p.pickupAddress,
+      dropoffAddress: p.dropoffAddress,
+      passengers: p.passengers,
+      notes: p.notes,
+      hasLargeLuggage: p.hasLargeLuggage,
+      luggageDescription: p.luggageDescription,
+      hasPackageDelivery: p.hasPackageDelivery,
+      packageDescription: p.packageDescription,
+      specialRequests: p.specialRequests,
+      paymentStatus: p.paymentStatus,
     }));
 
     const manifestData: ManifestData = {
@@ -609,23 +680,39 @@ const AdminManifest = () => {
         </div>
       )}
 
-      {/* Manifest Config Dialog */}
+      {/* Manifest Config & Edit Dialog */}
       <Dialog open={isManifestDialogOpen} onOpenChange={setIsManifestDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cetak Manifes</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FileDown className="w-5 h-5" />
+              Cetak Manifes
+            </DialogTitle>
             <DialogDescription>
-              Lengkapi data sopir dan armada untuk manifes
+              {isEditMode ? 'Edit data penumpang sebelum mencetak manifes' : 'Lengkapi data sopir dan armada untuk manifes'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="agentName">Nama Agent Travel</Label>
-              <Input
-                id="agentName"
-                value={manifestConfig.agentName}
-                onChange={(e) => setManifestConfig({ ...manifestConfig, agentName: e.target.value })}
-              />
+
+          {/* Trip & Agent Config */}
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="agentName">Nama Agent Travel</Label>
+                <Input
+                  id="agentName"
+                  value={manifestConfig.agentName}
+                  onChange={(e) => setManifestConfig({ ...manifestConfig, agentName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vehicleNumber">Nomor Plat / Armada</Label>
+                <Input
+                  id="vehicleNumber"
+                  value={manifestConfig.vehicleNumber}
+                  onChange={(e) => setManifestConfig({ ...manifestConfig, vehicleNumber: e.target.value })}
+                  placeholder="N 1234 AB"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -647,17 +734,172 @@ const AdminManifest = () => {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="vehicleNumber">Nomor Plat / Armada</Label>
-              <Input
-                id="vehicleNumber"
-                value={manifestConfig.vehicleNumber}
-                onChange={(e) => setManifestConfig({ ...manifestConfig, vehicleNumber: e.target.value })}
-                placeholder="N 1234 AB"
-              />
-            </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+
+          {/* Toggle Edit Mode */}
+          <div className="flex items-center justify-between border-t pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Mode Edit Penumpang</span>
+              <Badge variant={isEditMode ? "default" : "secondary"}>
+                {editablePassengers.length} penumpang
+              </Badge>
+            </div>
+            <Button
+              variant={isEditMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsEditMode(!isEditMode)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              {isEditMode ? 'Selesai Edit' : 'Edit Manifest'}
+            </Button>
+          </div>
+
+          {/* Editable Passengers Table */}
+          {isEditMode && (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8">#</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Telp</TableHead>
+                    <TableHead className="w-12">Pax</TableHead>
+                    <TableHead>Alamat Jemput</TableHead>
+                    <TableHead>Alamat Tujuan</TableHead>
+                    <TableHead className="w-24">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {editablePassengers.map((passenger, index) => (
+                    <TableRow key={passenger.id}>
+                      <TableCell className="font-medium">{index + 1}</TableCell>
+                      <TableCell>
+                        {editingPassengerId === passenger.id ? (
+                          <Input
+                            value={passenger.name}
+                            onChange={(e) => updateEditablePassenger(passenger.id, 'name', e.target.value)}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="font-medium">{passenger.name}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingPassengerId === passenger.id ? (
+                          <Input
+                            value={passenger.phone}
+                            onChange={(e) => updateEditablePassenger(passenger.id, 'phone', e.target.value)}
+                            className="h-8"
+                          />
+                        ) : (
+                          passenger.phone
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingPassengerId === passenger.id ? (
+                          <Input
+                            type="number"
+                            value={passenger.passengers}
+                            onChange={(e) => updateEditablePassenger(passenger.id, 'passengers', parseInt(e.target.value) || 1)}
+                            className="h-8 w-14"
+                            min={1}
+                          />
+                        ) : (
+                          passenger.passengers
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingPassengerId === passenger.id ? (
+                          <Input
+                            value={passenger.pickupAddress}
+                            onChange={(e) => updateEditablePassenger(passenger.id, 'pickupAddress', e.target.value)}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="text-sm">{passenger.pickupAddress}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingPassengerId === passenger.id ? (
+                          <Input
+                            value={passenger.dropoffAddress || ''}
+                            onChange={(e) => updateEditablePassenger(passenger.id, 'dropoffAddress', e.target.value || null)}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="text-sm">{passenger.dropoffAddress || '-'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {editingPassengerId === passenger.id ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingPassengerId(null)}
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setEditingPassengerId(passenger.id)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => movePassenger(index, 'up')}
+                                disabled={index === 0}
+                              >
+                                <GripVertical className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removePassengerFromManifest(passenger.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="p-2 border-t bg-muted/50">
+                <Button variant="outline" size="sm" onClick={addManualPassenger}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Manual
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Preview (non-edit mode) */}
+          {!isEditMode && (
+            <div className="border rounded-lg p-3 bg-muted/30 max-h-40 overflow-y-auto">
+              <p className="text-xs text-muted-foreground mb-2">Preview Penumpang:</p>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                {editablePassengers.map((p, i) => (
+                  <div key={p.id} className="flex items-center gap-1">
+                    <span className="font-medium">{i + 1}.</span>
+                    <span>{p.name}</span>
+                    <span className="text-muted-foreground">({p.passengers})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0 flex-wrap">
             <Button variant="outline" onClick={() => setIsManifestDialogOpen(false)}>
               Batal
             </Button>
@@ -686,9 +928,7 @@ const AdminManifest = () => {
                 Proses ke Operasional
               </Button>
             )}
-            <Button onClick={() => {
-              handleGenerateManifest(selectedBookingsGroup);
-            }}>
+            <Button onClick={handleGenerateManifest}>
               <FileDown className="w-4 h-4 mr-2" />
               Unduh PDF
             </Button>
