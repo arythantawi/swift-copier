@@ -207,7 +207,7 @@ const Auth = () => {
 
             {/* Right Panel */}
             <div className={`absolute flex items-center justify-center flex-col px-8 text-center top-0 h-full w-1/2 right-0 transition-transform duration-600 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
-              <h1 className="font-bold text-2xl mb-4">Halo, Sobat!</h1>
+              <h1 className="font-bold text-2xl mb-4 text-center">Hallo sahabat trans </h1>
               <p className="text-sm leading-5 tracking-wide mb-6 opacity-90">
                 Masukkan data Anda dan mulai perjalanan bersama kami
               </p>
