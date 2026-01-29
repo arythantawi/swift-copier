@@ -12,7 +12,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/index";
 import SearchResults from "./pages/search-results";
 import Booking from "./pages/booking";
-import TrackBooking from "./pages/track-booking";
+
 import Admin from "./pages/admin";
 import AdminLogin from "./pages/admin-login";
 import Auth from "./pages/auth";
@@ -57,7 +57,7 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/search" element={<SearchResults />} />
                     <Route path="/booking" element={<Booking />} />
-                    <Route path="/track" element={<TrackBooking />} />
+                    
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/my-bookings" element={<MyBookings />} />
                     <Route path="/profile" element={<Profile />} />
