@@ -77,6 +77,10 @@ interface UserTestimonial {
   route_taken: string | null;
   is_active: boolean;
   created_at: string;
+  // Original values submitted by user (not affected by admin edits)
+  original_testimonial_text: string | null;
+  original_rating: number | null;
+  is_deleted_by_admin: boolean;
 }
 
 const getStatusConfig = (status: string) => {
@@ -194,42 +198,8 @@ const Profile = () => {
     }
   }, [user]);
 
-  // Real-time subscription for testimonial updates (admin edits/deletes)
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('user-testimonials-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'testimonials',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            setTestimonials(prev => 
-              prev.map(testimonial => 
-                testimonial.id === payload.new.id 
-                  ? { ...testimonial, ...payload.new as UserTestimonial }
-                  : testimonial
-              )
-            );
-          } else if (payload.eventType === 'INSERT') {
-            setTestimonials(prev => [payload.new as UserTestimonial, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setTestimonials(prev => prev.filter(t => t.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+  // Note: No realtime subscription for testimonials
+  // User should always see their original reviews, unaffected by admin edits/deletes
 
   // Real-time subscription for booking updates
   useEffect(() => {
@@ -323,8 +293,12 @@ const Profile = () => {
         rating: reviewForm.rating,
         testimonial_text: reviewForm.testimonial_text,
         route_taken: `${selectedBooking.route_from} - ${selectedBooking.route_to}`,
-        is_active: true, // Show immediately
-        display_order: 0
+        is_active: true,
+        display_order: 0,
+        // Store original values so user always sees their original review
+        original_testimonial_text: reviewForm.testimonial_text,
+        original_rating: reviewForm.rating,
+        is_deleted_by_admin: false
       }]);
 
       if (error) throw error;
@@ -643,27 +617,33 @@ const Profile = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {testimonials.map(testimonial => (
-                  <Card key={testimonial.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex gap-1">
-                          {renderStars(testimonial.rating)}
+                {testimonials.map(testimonial => {
+                  // Always show original values submitted by user
+                  const displayText = testimonial.original_testimonial_text || testimonial.testimonial_text;
+                  const displayRating = testimonial.original_rating || testimonial.rating;
+                  
+                  return (
+                    <Card key={testimonial.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex gap-1">
+                            {renderStars(displayRating)}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(testimonial.created_at), 'dd MMM yyyy', { locale: localeId })}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(testimonial.created_at), 'dd MMM yyyy', { locale: localeId })}
-                        </span>
-                      </div>
-                      <p className="text-foreground mb-3">"{testimonial.testimonial_text}"</p>
-                      {testimonial.route_taken && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          {testimonial.route_taken}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        <p className="text-foreground mb-3">"{displayText}"</p>
+                        {testimonial.route_taken && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            {testimonial.route_taken}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
