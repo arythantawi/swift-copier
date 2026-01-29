@@ -99,6 +99,8 @@ interface Testimonial {
   route_taken: string | null;
   display_order: number;
   is_active: boolean;
+  user_id: string | null;
+  booking_id: string | null;
 }
 
 // Helper function to convert Google Drive links to direct image URL
@@ -208,7 +210,7 @@ const AdminContent = () => {
     setTestimonialsLoading(true);
     const { data, error } = await supabase
       .from('testimonials')
-      .select('id, customer_name, customer_photo_url, customer_location, rating, testimonial_text, route_taken, display_order, is_active, created_at, updated_at')
+      .select('id, customer_name, customer_photo_url, customer_location, rating, testimonial_text, route_taken, display_order, is_active, user_id, booking_id, created_at, updated_at')
       .order('display_order')
       .limit(100);
     if (!error) setTestimonials(data || []);
@@ -790,11 +792,12 @@ const AdminContent = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Urutan</TableHead>
+                    <TableHead className="w-12">No</TableHead>
+                    <TableHead>Foto</TableHead>
                     <TableHead>Nama</TableHead>
-                    <TableHead>Lokasi</TableHead>
                     <TableHead>Rating</TableHead>
                     <TableHead>Rute</TableHead>
+                    <TableHead>Sumber</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -803,14 +806,47 @@ const AdminContent = () => {
                   {testimonials.map((testimonial) => (
                     <TableRow key={testimonial.id}>
                       <TableCell>{testimonial.display_order}</TableCell>
-                      <TableCell className="font-medium">{testimonial.customer_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{testimonial.customer_location || '-'}</TableCell>
+                      <TableCell>
+                        {testimonial.customer_photo_url ? (
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted border border-border">
+                            <img 
+                              src={convertGoogleDriveUrl(testimonial.customer_photo_url)} 
+                              alt={testimonial.customer_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                img.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center">
+                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{testimonial.customer_name}</p>
+                          <p className="text-xs text-muted-foreground">{testimonial.customer_location || '-'}</p>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-0.5">
                           {renderStars(testimonial.rating)}
                         </div>
                       </TableCell>
                       <TableCell><Badge variant="outline">{testimonial.route_taken || '-'}</Badge></TableCell>
+                      <TableCell>
+                        {testimonial.user_id ? (
+                          <Badge variant="secondary" className="gap-1">
+                            <Star className="w-3 h-3" />
+                            User
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Admin</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Switch checked={testimonial.is_active} onCheckedChange={() => toggleTestimonialActive(testimonial)} />
                       </TableCell>

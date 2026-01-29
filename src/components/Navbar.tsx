@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Phone, Search, User, LogOut, ClipboardList, ChevronDown } from 'lucide-react';
+import { Menu, X, Phone, Search, User, LogOut, ClipboardList, ChevronDown, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -111,6 +111,12 @@ const Navbar = () => {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                      <User className="w-4 h-4" />
+                      Profil Saya
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/my-bookings" className="flex items-center gap-2 cursor-pointer">
                       <ClipboardList className="w-4 h-4" />
                       Pesanan Saya
@@ -161,10 +167,16 @@ const Navbar = () => {
               {navLinks.map(link => <a key={link.href} href={link.href} className="px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                   {link.label}
                 </a>)}
-              <Link to={user ? "/my-bookings" : "/track"} className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
-                <ClipboardList className="w-4 h-4" />
-                {user ? 'Pesanan Saya' : 'Cek Pesanan'}
+              <Link to={user ? "/profile" : "/track"} className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                <User className="w-4 h-4" />
+                {user ? 'Profil Saya' : 'Cek Pesanan'}
               </Link>
+              {user && (
+                <Link to="/my-bookings" className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                  <ClipboardList className="w-4 h-4" />
+                  Pesanan Saya
+                </Link>
+              )}
               <a href="tel:+6281234567890" className="flex items-center gap-2 px-4 py-3 rounded-lg text-muted-foreground">
                 <Phone className="w-4 h-4" />
                 <span>0812-3456-7890</span>
