@@ -16,6 +16,7 @@ import TrackBooking from "./pages/track-booking";
 import Admin from "./pages/admin";
 import AdminLogin from "./pages/admin-login";
 import Auth from "./pages/auth";
+import MyBookings from "./pages/my-bookings";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => {
                     <Route path="/booking" element={<Booking />} />
                     <Route path="/track" element={<TrackBooking />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/my-bookings" element={<MyBookings />} />
                     <Route path="/admin/login" element={<AdminLogin />} />
                     <Route path="/admin" element={<Admin />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -523,6 +523,7 @@ const Booking = () => {
             total_price: totalPrice,
             payment_status: 'pending',
             order_id: newOrderId,
+            user_id: user?.id || null,
           },
         ]);
 

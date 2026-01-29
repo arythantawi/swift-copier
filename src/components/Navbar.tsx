@@ -111,7 +111,7 @@ const Navbar = () => {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/track" className="flex items-center gap-2 cursor-pointer">
+                    <Link to="/my-bookings" className="flex items-center gap-2 cursor-pointer">
                       <ClipboardList className="w-4 h-4" />
                       Pesanan Saya
                     </Link>
@@ -161,7 +161,7 @@ const Navbar = () => {
               {navLinks.map(link => <a key={link.href} href={link.href} className="px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                   {link.label}
                 </a>)}
-              <Link to="/track" className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link to={user ? "/my-bookings" : "/track"} className="flex items-center gap-2 px-4 py-3 rounded-lg text-foreground font-medium hover:bg-secondary transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                 <ClipboardList className="w-4 h-4" />
                 {user ? 'Pesanan Saya' : 'Cek Pesanan'}
               </Link>
