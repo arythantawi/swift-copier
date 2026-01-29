@@ -30,7 +30,7 @@ export interface ManifestData {
   passengers: ManifestPassenger[];
 }
 
-// Known city/area order from pickup point (closest to farthest from destination)
+// Known city/area order from pickup point
 const getLocationOrder = (routeFrom: string, routeTo: string): Record<string, number> => {
   const locationOrders: Record<string, Record<string, number>> = {
     'Banyuwangi-Surabaya': {
@@ -111,32 +111,51 @@ const loadLogo = (): Promise<string> => {
   });
 };
 
-// Truncate text to fit in cell
-const truncateText = (text: string, maxLength: number): string => {
-  if (!text) return '-';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 2) + '..';
-};
-
-// Get payment status short label
-const getPaymentLabel = (status: string): string => {
-  switch (status) {
-    case 'paid': return '✓';
-    case 'pending': return '○';
-    case 'waiting_verification': return '◐';
-    case 'cancelled': return '✗';
-    default: return '?';
-  }
-};
-
 // Format date to Indonesian
 const formatDate = (dateStr: string): string => {
   return new Date(dateStr).toLocaleDateString('id-ID', {
-    weekday: 'short',
+    weekday: 'long',
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   });
+};
+
+// Get payment status label
+const getPaymentLabel = (status: string): string => {
+  switch (status) {
+    case 'paid': return 'LUNAS';
+    case 'pending': return 'BELUM';
+    case 'waiting_verification': return 'VERIF';
+    case 'cancelled': return 'BATAL';
+    default: return '-';
+  }
+};
+
+// Wrap text to fit in cell width
+const wrapText = (doc: jsPDF, text: string, maxWidth: number): string[] => {
+  if (!text) return ['-'];
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  words.forEach(word => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = doc.getTextWidth(testLine);
+    
+    if (testWidth > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  });
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines.length > 0 ? lines : ['-'];
 };
 
 export const generateManifestPdf = async (data: ManifestData): Promise<void> => {
@@ -148,231 +167,350 @@ export const generateManifestPdf = async (data: ManifestData): Promise<void> => 
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 8;
-  const contentWidth = pageWidth - margin * 2;
-  let y = margin;
+  const marginLeft = 10;
+  const marginRight = 10;
+  const marginTop = 10;
+  const contentWidth = pageWidth - marginLeft - marginRight;
+  let y = marginTop;
 
   // Sort passengers by location
   const sortedPassengers = sortPassengersByLocation(data.passengers, data.routeFrom, data.routeTo);
 
   const logoBase64 = await loadLogo();
 
-  // ============ HEADER ============
-  const headerHeight = 28;
+  // Colors
+  const primaryColor: [number, number, number] = [180, 142, 38]; // Gold
+  const darkColor: [number, number, number] = [30, 30, 30];
+  const grayColor: [number, number, number] = [100, 100, 100];
+  const lightGray: [number, number, number] = [240, 240, 240];
+  const borderColor: [number, number, number] = [200, 200, 200];
+
+  // ============ HEADER SECTION ============
+  // Header background
+  doc.setFillColor(...lightGray);
+  doc.rect(marginLeft, y, contentWidth, 22, 'F');
   
-  // Logo on left
+  // Border
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(0.8);
+  doc.line(marginLeft, y, marginLeft + contentWidth, y);
+
+  // Logo
   if (logoBase64) {
-    doc.addImage(logoBase64, 'PNG', margin, y, 12, 12);
+    doc.addImage(logoBase64, 'PNG', marginLeft + 3, y + 3, 16, 16);
   }
 
-  // Title and company
-  doc.setFontSize(14);
+  // Company name and title
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('MANIFES PERJALANAN', margin + 15, y + 5);
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('44 TRANS JAWA BALI', margin + 15, y + 10);
-
-  // Route info on the right side of header
-  const route = data.routeVia 
-    ? `${data.routeFrom} → ${data.routeVia} → ${data.routeTo}`
-    : `${data.routeFrom} → ${data.routeTo}`;
+  doc.setFontSize(16);
+  doc.setTextColor(...darkColor);
+  doc.text('44 TRANS JAWA BALI', marginLeft + 22, y + 8);
   
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(route, pageWidth - margin, y + 4, { align: 'right' });
-  
-  doc.setFontSize(8);
+  doc.setTextColor(...grayColor);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${formatDate(data.tripDate)} | Jam: ${data.pickupTime}`, pageWidth - margin, y + 9, { align: 'right' });
+  doc.text('MANIFES PERJALANAN', marginLeft + 22, y + 14);
+
+  // Route on right side
+  const route = data.routeVia 
+    ? `${data.routeFrom} - ${data.routeVia} - ${data.routeTo}`
+    : `${data.routeFrom} - ${data.routeTo}`;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...darkColor);
+  doc.text(route, pageWidth - marginRight - 3, y + 8, { align: 'right' });
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...grayColor);
+  doc.text(formatDate(data.tripDate), pageWidth - marginRight - 3, y + 14, { align: 'right' });
+
+  y += 24;
+
+  // ============ INFO ROW ============
+  doc.setFillColor(255, 255, 255);
+  doc.rect(marginLeft, y, contentWidth, 12, 'F');
+  doc.setDrawColor(...borderColor);
+  doc.setLineWidth(0.3);
+  doc.rect(marginLeft, y, contentWidth, 12, 'S');
+
+  const infoY = y + 4;
+  const col1 = marginLeft + 3;
+  const col2 = marginLeft + 50;
+  const col3 = marginLeft + 100;
+  const col4 = marginLeft + 150;
+
+  doc.setFontSize(8);
+  doc.setTextColor(...grayColor);
+  doc.setFont('helvetica', 'normal');
+  
+  // Row 1
+  doc.text('Agent:', col1, infoY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(data.agentName, col1 + 12, infoY);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Jam:', col2, infoY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(data.pickupTime, col2 + 10, infoY);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Armada:', col3, infoY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(data.vehicleNumber || '-', col3 + 15, infoY);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Sopir:', col4, infoY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  const driverInfo = data.driverName ? `${data.driverName}` : '-';
+  doc.text(driverInfo, col4 + 12, infoY);
+
+  // Row 2
+  const infoY2 = infoY + 5;
+  const totalPassengers = data.passengers.reduce((sum, p) => sum + p.passengers, 0);
+  const paidCount = data.passengers.filter(p => p.paymentStatus === 'paid').length;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('HP Sopir:', col1, infoY2);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(data.driverPhone || '-', col1 + 18, infoY2);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Total Pax:', col2, infoY2);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(`${totalPassengers} orang`, col2 + 18, infoY2);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Status Bayar:', col3, infoY2);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text(`${paidCount} Lunas / ${data.passengers.length} Booking`, col3 + 24, infoY2);
 
   y += 14;
 
-  // Agent & Driver Info Row
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  const infoY = y;
-  doc.text(`Agent: ${data.agentName}`, margin, infoY);
-  doc.text(`Armada: ${data.vehicleNumber || '-'}`, margin + 45, infoY);
-  doc.text(`Sopir: ${data.driverName || '-'} (${data.driverPhone || '-'})`, margin + 90, infoY);
+  // ============ TABLE SECTION ============
+  // Column definitions
+  const cols = {
+    no: { x: marginLeft, w: 8 },
+    name: { x: marginLeft + 8, w: 28 },
+    phone: { x: marginLeft + 36, w: 24 },
+    pax: { x: marginLeft + 60, w: 10 },
+    pickup: { x: marginLeft + 70, w: 48 },
+    dropoff: { x: marginLeft + 118, w: 42 },
+    notes: { x: marginLeft + 160, w: 22 },
+    status: { x: marginLeft + 182, w: 13 },
+  };
   
-  // Summary
-  const totalPassengers = data.passengers.reduce((sum, p) => sum + p.passengers, 0);
-  const paidCount = data.passengers.filter(p => p.paymentStatus === 'paid').length;
-  doc.text(`Total: ${totalPassengers} pax | Lunas: ${paidCount}/${data.passengers.length}`, pageWidth - margin, infoY, { align: 'right' });
+  const headerHeight = 8;
+  const minRowHeight = 10;
 
-  y += 6;
-
-  // Divider line
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 2;
-
-  // ============ TABLE HEADER ============
-  const rowHeight = 6;
-  const colWidths = {
-    no: 6,
-    name: 30,
-    phone: 22,
-    pax: 8,
-    pickup: 55,
-    dropoff: 50,
-    notes: 18,
-    pay: 5,
-  };
-
-  const drawTableHeader = () => {
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, contentWidth, rowHeight, 'F');
+  // Draw table header
+  const drawTableHeader = (startY: number): number => {
+    // Header background
+    doc.setFillColor(...primaryColor);
+    doc.rect(marginLeft, startY, contentWidth, headerHeight, 'F');
     
-    doc.setFontSize(6);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
     
-    let x = margin + 1;
-    doc.text('No', x, y + 4);
-    x += colWidths.no;
-    doc.text('Nama', x, y + 4);
-    x += colWidths.name;
-    doc.text('Telp', x, y + 4);
-    x += colWidths.phone;
-    doc.text('Pax', x, y + 4);
-    x += colWidths.pax;
-    doc.text('Alamat Jemput', x, y + 4);
-    x += colWidths.pickup;
-    doc.text('Alamat Tujuan', x, y + 4);
-    x += colWidths.dropoff;
-    doc.text('Ket', x, y + 4);
-    x += colWidths.notes;
-    doc.text('$', x, y + 4);
-
-    y += rowHeight;
+    const headerY = startY + 5.5;
+    doc.text('NO', cols.no.x + 2, headerY);
+    doc.text('NAMA', cols.name.x + 1, headerY);
+    doc.text('TELEPON', cols.phone.x + 1, headerY);
+    doc.text('PAX', cols.pax.x + 1, headerY);
+    doc.text('ALAMAT JEMPUT', cols.pickup.x + 1, headerY);
+    doc.text('ALAMAT TUJUAN', cols.dropoff.x + 1, headerY);
+    doc.text('KET', cols.notes.x + 1, headerY);
+    doc.text('BAYAR', cols.status.x + 1, headerY);
+    
+    return startY + headerHeight;
   };
 
-  // Draw table borders for a row
-  const drawRowBorders = (rowY: number) => {
-    doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.1);
+  // Draw table row
+  const drawTableRow = (passenger: ManifestPassenger, index: number, startY: number): number => {
+    doc.setFontSize(7);
     
-    let x = margin;
-    // Vertical lines
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.no;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.name;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.phone;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.pax;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.pickup;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.dropoff;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    x += colWidths.notes;
-    doc.line(x, rowY, x, rowY + rowHeight);
-    doc.line(pageWidth - margin, rowY, pageWidth - margin, rowY + rowHeight);
-    
-    // Bottom line
-    doc.line(margin, rowY + rowHeight, pageWidth - margin, rowY + rowHeight);
-  };
+    // Calculate row height based on address content
+    const pickupLines = wrapText(doc, passenger.pickupAddress, cols.pickup.w - 2);
+    const dropoffLines = wrapText(doc, passenger.dropoffAddress || '-', cols.dropoff.w - 2);
+    const maxLines = Math.max(pickupLines.length, dropoffLines.length, 1);
+    const rowHeight = Math.max(minRowHeight, maxLines * 3.5 + 4);
 
-  const rowsPerPage = 14;
-  let currentRow = 0;
-
-  // Draw initial header
-  drawTableHeader();
-
-  // ============ TABLE ROWS ============
-  sortedPassengers.forEach((passenger, index) => {
-    // Check if we need a new page (14 rows per page)
-    if (currentRow >= rowsPerPage) {
-      doc.addPage();
-      y = margin + 5;
-      
-      // Mini header on subsequent pages
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`MANIFES - ${data.routeFrom} → ${data.routeTo} - ${formatDate(data.tripDate)} - Hal ${doc.getNumberOfPages()}`, margin, y);
-      y += 4;
-      
-      drawTableHeader();
-      currentRow = 0;
-    }
-
-    const rowY = y;
-    
-    // Alternate row background
-    if (index % 2 === 1) {
+    // Alternating row background
+    if (index % 2 === 0) {
       doc.setFillColor(250, 250, 250);
-      doc.rect(margin, rowY, contentWidth, rowHeight, 'F');
+    } else {
+      doc.setFillColor(255, 255, 255);
+    }
+    doc.rect(marginLeft, startY, contentWidth, rowHeight, 'F');
+
+    // Row border
+    doc.setDrawColor(...borderColor);
+    doc.setLineWidth(0.2);
+    doc.line(marginLeft, startY + rowHeight, marginLeft + contentWidth, startY + rowHeight);
+
+    // Column separators
+    doc.setDrawColor(230, 230, 230);
+    Object.values(cols).forEach(col => {
+      doc.line(col.x, startY, col.x, startY + rowHeight);
+    });
+    doc.line(marginLeft + contentWidth, startY, marginLeft + contentWidth, startY + rowHeight);
+
+    const textY = startY + 4;
+    doc.setTextColor(...darkColor);
+
+    // No
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${index + 1}`, cols.no.x + 3, textY);
+
+    // Name
+    doc.setFont('helvetica', 'bold');
+    const nameText = passenger.name.length > 16 ? passenger.name.substring(0, 14) + '..' : passenger.name;
+    doc.text(nameText, cols.name.x + 1, textY);
+
+    // Phone
+    doc.setFont('helvetica', 'normal');
+    const phoneText = passenger.phone.length > 14 ? passenger.phone.substring(0, 12) + '..' : passenger.phone;
+    doc.text(phoneText, cols.phone.x + 1, textY);
+
+    // Pax
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${passenger.passengers}`, cols.pax.x + 3, textY);
+
+    // Pickup address (multiline)
+    doc.setFont('helvetica', 'normal');
+    pickupLines.forEach((line, i) => {
+      doc.text(line, cols.pickup.x + 1, textY + (i * 3.5));
+    });
+
+    // Dropoff address (multiline)
+    dropoffLines.forEach((line, i) => {
+      doc.text(line, cols.dropoff.x + 1, textY + (i * 3.5));
+    });
+
+    // Notes/special info
+    const notesArr: string[] = [];
+    if (passenger.hasLargeLuggage) notesArr.push('Brg');
+    if (passenger.hasPackageDelivery) notesArr.push('Ttp');
+    if (passenger.specialRequests) notesArr.push('Req');
+    if (passenger.notes) notesArr.push('Cat');
+    doc.setFontSize(6);
+    doc.text(notesArr.join(',') || '-', cols.notes.x + 1, textY);
+
+    // Payment status
+    doc.setFontSize(6);
+    const statusLabel = getPaymentLabel(passenger.paymentStatus);
+    if (passenger.paymentStatus === 'paid') {
+      doc.setTextColor(34, 139, 34); // Green
+      doc.setFont('helvetica', 'bold');
+    } else if (passenger.paymentStatus === 'pending') {
+      doc.setTextColor(200, 150, 0); // Orange
+      doc.setFont('helvetica', 'normal');
+    } else {
+      doc.setTextColor(...grayColor);
+      doc.setFont('helvetica', 'normal');
+    }
+    doc.text(statusLabel, cols.status.x + 1, textY);
+
+    return startY + rowHeight;
+  };
+
+  // Start drawing table
+  y = drawTableHeader(y);
+  
+  let currentPage = 1;
+  const maxY = pageHeight - 20; // Leave space for footer
+
+  sortedPassengers.forEach((passenger, index) => {
+    // Check if we need a new page
+    const pickupLines = wrapText(doc, passenger.pickupAddress, cols.pickup.w - 2);
+    const dropoffLines = wrapText(doc, passenger.dropoffAddress || '-', cols.dropoff.w - 2);
+    const maxLines = Math.max(pickupLines.length, dropoffLines.length, 1);
+    const estimatedRowHeight = Math.max(minRowHeight, maxLines * 3.5 + 4);
+
+    if (y + estimatedRowHeight > maxY) {
+      // Add page footer
+      doc.setFontSize(7);
+      doc.setTextColor(...grayColor);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Halaman ${currentPage}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+      // New page
+      doc.addPage();
+      currentPage++;
+      y = marginTop;
+
+      // Mini header on new page
+      doc.setFillColor(...lightGray);
+      doc.rect(marginLeft, y, contentWidth, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...darkColor);
+      doc.text(`MANIFES - ${route} - ${formatDate(data.tripDate)}`, marginLeft + 3, y + 5.5);
+      doc.text(`Hal ${currentPage}`, pageWidth - marginRight - 3, y + 5.5, { align: 'right' });
+      y += 10;
+
+      y = drawTableHeader(y);
     }
 
-    // Draw row data
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-
-    let x = margin + 1;
-    
-    // No
-    doc.text(`${index + 1}`, x, rowY + 4);
-    x += colWidths.no;
-    
-    // Name (truncate to fit)
-    doc.setFont('helvetica', 'bold');
-    doc.text(truncateText(passenger.name, 18), x, rowY + 4);
-    doc.setFont('helvetica', 'normal');
-    x += colWidths.name;
-    
-    // Phone
-    doc.text(truncateText(passenger.phone, 14), x, rowY + 4);
-    x += colWidths.phone;
-    
-    // Passengers count
-    doc.text(`${passenger.passengers}`, x + 2, rowY + 4);
-    x += colWidths.pax;
-    
-    // Pickup address (truncate)
-    doc.text(truncateText(passenger.pickupAddress, 38), x, rowY + 4);
-    x += colWidths.pickup;
-    
-    // Dropoff address (truncate)
-    doc.text(truncateText(passenger.dropoffAddress || '-', 32), x, rowY + 4);
-    x += colWidths.dropoff;
-    
-    // Notes/special info (compact)
-    const notesArr: string[] = [];
-    if (passenger.hasLargeLuggage) notesArr.push('📦');
-    if (passenger.hasPackageDelivery) notesArr.push('📬');
-    if (passenger.specialRequests) notesArr.push('⚠️');
-    if (passenger.notes) notesArr.push('📝');
-    doc.text(notesArr.join('') || '-', x, rowY + 4);
-    x += colWidths.notes;
-    
-    // Payment status
-    doc.text(getPaymentLabel(passenger.paymentStatus), x, rowY + 4);
-
-    // Draw borders
-    drawRowBorders(rowY);
-
-    y += rowHeight;
-    currentRow++;
+    y = drawTableRow(passenger, index, y);
   });
 
-  // ============ FOOTER ============
-  y += 3;
-  
-  // Notes legend
-  doc.setFontSize(5);
-  doc.setTextColor(100, 100, 100);
-  doc.text('Keterangan: 📦=Barang Besar | 📬=Titipan | ⚠️=Permintaan Khusus | 📝=Catatan | ✓=Lunas | ○=Belum Bayar | ◐=Verifikasi', margin, y);
-  y += 3;
+  // ============ FOOTER SECTION ============
+  y += 4;
 
-  doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')} | Agent: ${data.agentName}`, margin, y);
+  // Legend box
+  doc.setFillColor(...lightGray);
+  doc.rect(marginLeft, y, contentWidth, 10, 'F');
+  doc.setDrawColor(...borderColor);
+  doc.setLineWidth(0.2);
+  doc.rect(marginLeft, y, contentWidth, 10, 'S');
+
+  doc.setFontSize(6);
+  doc.setTextColor(...grayColor);
+  doc.setFont('helvetica', 'normal');
+  
+  const legendY = y + 4;
+  doc.text('Keterangan:', marginLeft + 3, legendY);
+  doc.text('Brg = Barang Besar  |  Ttp = Titipan Paket  |  Req = Permintaan Khusus  |  Cat = Catatan', marginLeft + 22, legendY);
+  
+  const legendY2 = legendY + 3.5;
+  doc.text('Status Bayar:', marginLeft + 3, legendY2);
+  doc.setTextColor(34, 139, 34);
+  doc.text('LUNAS', marginLeft + 22, legendY2);
+  doc.setTextColor(...grayColor);
+  doc.text('= Sudah Bayar  |', marginLeft + 34, legendY2);
+  doc.setTextColor(200, 150, 0);
+  doc.text('BELUM', marginLeft + 52, legendY2);
+  doc.setTextColor(...grayColor);
+  doc.text('= Belum Bayar  |', marginLeft + 64, legendY2);
+  doc.text('VERIF = Menunggu Verifikasi', marginLeft + 82, legendY2);
+
+  y += 12;
+
+  // Print info
+  doc.setFontSize(6);
+  doc.setTextColor(...grayColor);
+  doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')} | Agent: ${data.agentName} | Halaman ${currentPage}`, marginLeft + 3, y + 2);
+
+  // Bottom border
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(0.8);
+  doc.line(marginLeft, y + 5, marginLeft + contentWidth, y + 5);
 
   // ============ SAVE ============
   const dateStr = data.tripDate.replace(/-/g, '');
