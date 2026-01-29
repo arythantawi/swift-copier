@@ -286,7 +286,7 @@ const Profile = () => {
         rating: reviewForm.rating,
         testimonial_text: reviewForm.testimonial_text,
         route_taken: `${selectedBooking.route_from} - ${selectedBooking.route_to}`,
-        is_active: false, // Admin needs to approve
+        is_active: true, // Show immediately
         display_order: 0
       }]);
 
@@ -294,7 +294,7 @@ const Profile = () => {
 
       toast({
         title: 'Ulasan Terkirim!',
-        description: 'Terima kasih atas ulasan Anda. Ulasan akan ditampilkan setelah disetujui admin.',
+        description: 'Terima kasih atas ulasan Anda.',
       });
 
       setReviewDialogOpen(false);
@@ -613,22 +613,17 @@ const Profile = () => {
                         <div className="flex gap-1">
                           {renderStars(testimonial.rating)}
                         </div>
-                        <Badge variant={testimonial.is_active ? 'default' : 'secondary'}>
-                          {testimonial.is_active ? 'Ditampilkan' : 'Menunggu Review'}
-                        </Badge>
-                      </div>
-                      <p className="text-foreground mb-3">"{testimonial.testimonial_text}"</p>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        {testimonial.route_taken && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {testimonial.route_taken}
-                          </span>
-                        )}
-                        <span>
+                        <span className="text-xs text-muted-foreground">
                           {format(new Date(testimonial.created_at), 'dd MMM yyyy', { locale: localeId })}
                         </span>
                       </div>
+                      <p className="text-foreground mb-3">"{testimonial.testimonial_text}"</p>
+                      {testimonial.route_taken && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          {testimonial.route_taken}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
