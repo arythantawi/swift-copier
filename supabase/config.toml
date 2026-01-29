@@ -1,1 +1,25 @@
 project_id = "ojxydihfvorglvmqyyaq"
+
+[functions.create-admin-user]
+verify_jwt = false
+
+[functions.delete-admin-user]
+verify_jwt = false
+
+[functions.list-admin-users]
+verify_jwt = false
+
+[functions.reset-user-mfa]
+verify_jwt = false
+
+[functions.send-booking-notification]
+verify_jwt = false
+
+[functions.update-admin-password]
+verify_jwt = false
+
+[functions.upload-to-drive]
+verify_jwt = false
+
+[functions.send-whatsapp-ticket]
+verify_jwt = false
