@@ -194,6 +194,43 @@ const Profile = () => {
     }
   }, [user]);
 
+  // Real-time subscription for testimonial updates (admin edits/deletes)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-testimonials-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'testimonials',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            setTestimonials(prev => 
+              prev.map(testimonial => 
+                testimonial.id === payload.new.id 
+                  ? { ...testimonial, ...payload.new as UserTestimonial }
+                  : testimonial
+              )
+            );
+          } else if (payload.eventType === 'INSERT') {
+            setTestimonials(prev => [payload.new as UserTestimonial, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setTestimonials(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Real-time subscription for booking updates
   useEffect(() => {
     if (!user) return;
