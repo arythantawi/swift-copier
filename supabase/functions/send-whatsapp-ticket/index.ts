@@ -150,7 +150,10 @@ async function sendTextMessage(
   return { success: true, messageId: result.data?.message_id };
 }
 
-// Send document via FlowKirim - try multiple endpoints
+// Send media/document via FlowKirim using media_url
+// Note: This requires the PDF to be hosted at a public URL
+// Since we have base64, we'll try sending it directly first, 
+// then fall back to just sending text if media fails
 async function sendDocument(
   apiKey: string,
   sessionId: string,
@@ -159,54 +162,45 @@ async function sendDocument(
   filename: string,
   caption: string
 ): Promise<{ success: boolean; messageId?: string }> {
-  console.log(`Sending document to ${phone}: ${filename}`);
+  console.log(`Attempting to send document to ${phone}: ${filename}`);
 
-  // Try different possible endpoints for document sending
-  const endpoints = [
-    "/api/whatsapp/messages/media",
-    "/api/whatsapp/messages/file",
-    "/api/whatsapp/send-document",
-    "/api/whatsapp/messages/document",
-  ];
+  // Try the personal media endpoint (similar to group media endpoint pattern)
+  try {
+    console.log("Trying endpoint: /api/whatsapp/messages/media");
+    const response = await fetch(`${BASE_URL}/api/whatsapp/messages/media`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        to: phone,
+        // Try with base64 data URL format
+        media_url: `data:application/pdf;base64,${base64Document}`,
+        type: "document",
+        caption: caption,
+        filename: filename,
+      }),
+    });
 
-  for (const endpoint of endpoints) {
-    try {
-      console.log(`Trying endpoint: ${endpoint}`);
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          to: phone,
-          document: base64Document,
-          media: base64Document,
-          file: base64Document,
-          filename: filename,
-          caption: caption,
-          mimetype: "application/pdf",
-        }),
-      });
-
-      const text = await response.text();
-      console.log(`Response from ${endpoint}:`, text.substring(0, 200));
-      
-      // Check if it's valid JSON
-      if (text.startsWith("{")) {
-        const result = JSON.parse(text);
-        if (result.success) {
-          console.log("Document sent successfully via:", endpoint);
-          return { success: true, messageId: result.data?.message_id };
-        }
+    const text = await response.text();
+    console.log(`Response from /api/whatsapp/messages/media:`, text.substring(0, 300));
+    
+    if (text.startsWith("{")) {
+      const result = JSON.parse(text);
+      if (result.success) {
+        console.log("Document sent successfully via /api/whatsapp/messages/media");
+        return { success: true, messageId: result.data?.message_id };
       }
-    } catch (err) {
-      console.log(`Endpoint ${endpoint} failed:`, err);
     }
+  } catch (err) {
+    console.log(`Media endpoint failed:`, err);
   }
 
-  console.log("All document endpoints failed, document not sent");
+  // FlowKirim API doesn't support base64 document upload for personal messages
+  // The PDF will need to be downloaded from the booking confirmation page
+  console.log("Document sending not supported - PDF must be downloaded manually");
   return { success: false };
 }
 
