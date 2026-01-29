@@ -88,7 +88,7 @@ const PremiumServices = () => {
   };
 
   return (
-    <section ref={sectionRef} className="py-12 md:py-20 bg-gradient-to-b from-background to-secondary/30">
+    <section ref={sectionRef} className="py-12 md:py-20 bg-white">
       <div className="container px-4 sm:px-6">
         {/* Header */}
         <div className="premium-title text-center mb-10 md:mb-14">

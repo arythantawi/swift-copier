@@ -316,7 +316,7 @@ const VideoSection = () => {
       className="relative py-16 md:py-24 overflow-hidden"
     >
       {/* Parallax Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/30 to-background" />
+      <div className="absolute inset-0 bg-white" />
       
       {/* Floating parallax shapes */}
       <div 
