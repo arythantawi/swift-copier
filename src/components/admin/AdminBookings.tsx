@@ -81,7 +81,7 @@ const AdminBookings = ({ onStatsUpdate }: AdminBookingsProps) => {
     });
   }, [stats, onStatsUpdate]);
 
-  const updatePaymentStatus = async (orderId: string, newStatus: string) => {
+  const updatePaymentStatus = async (orderId: string, newStatus: string, autoSendWhatsApp: boolean = true) => {
     setIsUpdating(orderId);
     try {
       const { error } = await supabase
@@ -92,12 +92,88 @@ const AdminBookings = ({ onStatsUpdate }: AdminBookingsProps) => {
       if (error) throw error;
       
       toast.success(`Status berhasil diubah ke ${getStatusLabel(newStatus)}`);
+      
+      // Auto send WhatsApp ticket when payment is confirmed
+      if (newStatus === 'paid' && autoSendWhatsApp) {
+        const booking = bookings.find(b => b.order_id === orderId);
+        if (booking) {
+          toast.loading('Mengirim tiket ke WhatsApp...', { id: `wa-${orderId}` });
+          try {
+            await sendWhatsAppTicket(booking);
+            toast.success('Tiket berhasil dikirim via WhatsApp!', { id: `wa-${orderId}` });
+          } catch (waError) {
+            console.error('Failed to send WhatsApp ticket:', waError);
+            toast.error('Gagal mengirim tiket WhatsApp. Anda bisa kirim manual.', { id: `wa-${orderId}` });
+          }
+        }
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Gagal mengubah status');
     } finally {
       setIsUpdating(null);
     }
+  };
+
+  const sendWhatsAppTicket = async (booking: Booking) => {
+    // Generate PDF as base64
+    const doc = await generateTicketPdf({
+      orderId: booking.order_id,
+      customerName: booking.customer_name,
+      customerPhone: booking.customer_phone,
+      customerEmail: booking.customer_email,
+      routeFrom: booking.route_from,
+      routeTo: booking.route_to,
+      routeVia: booking.route_via,
+      travelDate: booking.travel_date,
+      pickupTime: booking.pickup_time,
+      pickupAddress: booking.pickup_address,
+      dropoffAddress: booking.dropoff_address,
+      passengers: booking.passengers,
+      totalPrice: booking.total_price,
+      notes: booking.notes,
+      paymentStatus: 'paid',
+    }, { returnBlob: true });
+    
+    if (!doc) {
+      throw new Error('Failed to generate PDF');
+    }
+    
+    // Convert PDF to base64
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    
+    // Call edge function to send WhatsApp
+    const { data, error } = await supabase.functions.invoke('send-whatsapp-ticket', {
+      body: {
+        booking: {
+          order_id: booking.order_id,
+          customer_name: booking.customer_name,
+          customer_phone: booking.customer_phone,
+          customer_email: booking.customer_email,
+          route_from: booking.route_from,
+          route_to: booking.route_to,
+          route_via: booking.route_via,
+          travel_date: booking.travel_date,
+          pickup_time: booking.pickup_time,
+          pickup_address: booking.pickup_address,
+          dropoff_address: booking.dropoff_address,
+          passengers: booking.passengers,
+          total_price: booking.total_price,
+          notes: booking.notes,
+        },
+        ticketBase64: pdfBase64,
+      },
+    });
+    
+    if (error) {
+      throw error;
+    }
+    
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to send WhatsApp');
+    }
+    
+    return data;
   };
 
   const getStatusLabel = (status: string) => {
@@ -197,34 +273,44 @@ Terima kasih! 🙏`;
   };
 
   const handleSendTicketWhatsApp = async (booking: Booking) => {
-    const doc = await generateTicketPdf({
-      orderId: booking.order_id,
-      customerName: booking.customer_name,
-      customerPhone: booking.customer_phone,
-      customerEmail: booking.customer_email,
-      routeFrom: booking.route_from,
-      routeTo: booking.route_to,
-      routeVia: booking.route_via,
-      travelDate: booking.travel_date,
-      pickupTime: booking.pickup_time,
-      pickupAddress: booking.pickup_address,
-      passengers: booking.passengers,
-      totalPrice: booking.total_price,
-      notes: booking.notes,
-      paymentStatus: 'paid',
-    }, { returnBlob: true });
-    
-    if (doc) {
-      doc.save(`Tiket-${booking.order_id}.pdf`);
+    toast.loading('Mengirim tiket ke WhatsApp...', { id: `wa-manual-${booking.order_id}` });
+    try {
+      await sendWhatsAppTicket(booking);
+      toast.success('Tiket berhasil dikirim via WhatsApp!', { id: `wa-manual-${booking.order_id}` });
+    } catch (error) {
+      console.error('Failed to send WhatsApp via API:', error);
+      toast.error('Gagal kirim via API. Membuka WhatsApp manual...', { id: `wa-manual-${booking.order_id}` });
       
-      const phone = formatPhoneForWhatsApp(booking.customer_phone);
-      const message = encodeURIComponent(generateWhatsAppMessage(booking));
+      // Fallback to manual WhatsApp
+      const doc = await generateTicketPdf({
+        orderId: booking.order_id,
+        customerName: booking.customer_name,
+        customerPhone: booking.customer_phone,
+        customerEmail: booking.customer_email,
+        routeFrom: booking.route_from,
+        routeTo: booking.route_to,
+        routeVia: booking.route_via,
+        travelDate: booking.travel_date,
+        pickupTime: booking.pickup_time,
+        pickupAddress: booking.pickup_address,
+        passengers: booking.passengers,
+        totalPrice: booking.total_price,
+        notes: booking.notes,
+        paymentStatus: 'paid',
+      }, { returnBlob: true });
       
-      setTimeout(() => {
-        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-      }, 500);
-      
-      toast.success('Tiket PDF telah diunduh. Silakan lampirkan ke chat WhatsApp.');
+      if (doc) {
+        doc.save(`Tiket-${booking.order_id}.pdf`);
+        
+        const phone = formatPhoneForWhatsApp(booking.customer_phone);
+        const message = encodeURIComponent(generateWhatsAppMessage(booking));
+        
+        setTimeout(() => {
+          window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        }, 500);
+        
+        toast.info('Tiket PDF telah diunduh. Silakan lampirkan ke chat WhatsApp.');
+      }
     }
   };
 
