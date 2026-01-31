@@ -9,7 +9,7 @@ import Services from '@/components/Services';
 import StatsCounter from '@/components/StatsCounter';
 import Facilities from '@/components/Facilities';
 import PopularRoutes from '@/components/PopularRoutes';
-import Gallery from '@/components/Gallery';
+
 import VideoSection from '@/components/VideoSection';
 import PremiumServices from '@/components/PremiumServices';
 import Features from '@/components/Features';
@@ -60,7 +60,7 @@ const Index = () => {
         <section id="rute">
           <PopularRoutes />
         </section>
-        <Gallery />
+        
         <VideoSection />
         <PremiumServices />
         <Features />

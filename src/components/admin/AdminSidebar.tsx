@@ -13,7 +13,6 @@ import {
   LayoutGrid,
   Play,
   Database,
-  Camera
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,7 +50,6 @@ const websiteItems = [
   { id: 'schedules', title: 'Jadwal', icon: Calendar },
   { id: 'content', title: 'Konten', icon: LayoutGrid },
   { id: 'videos', title: 'Video', icon: Play },
-  { id: 'gallery', title: 'Galeri', icon: Camera },
 ];
 
 const reportItems = [
