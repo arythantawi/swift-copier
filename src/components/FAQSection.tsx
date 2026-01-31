@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import { useFaqs } from '@/hooks/useSiteData';
-import { HelpCircle, MessageCircle, ChevronRight } from 'lucide-react';
+import { HelpCircle, MessageCircle, ChevronRight, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Typewriter } from '@/hooks/use-typewriter';
@@ -158,17 +158,56 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
           ))}
         </div>
 
-        {/* FAQ Detail Dialog */}
+        {/* FAQ Detail Dialog - Modern Design */}
         <Dialog open={!!selectedFaq} onOpenChange={(open) => !open && setSelectedFaq(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-lg md:text-xl font-bold text-foreground pr-6">
-                {selectedFaq?.question}
-              </DialogTitle>
-            </DialogHeader>
-            <DialogDescription className="text-muted-foreground leading-relaxed text-sm md:text-base pt-2">
-              {selectedFaq?.answer}
-            </DialogDescription>
+          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-0 shadow-2xl">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-5 md:px-8 md:py-6">
+              <DialogHeader className="space-y-0">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <DialogTitle className="text-lg md:text-xl font-bold text-white leading-relaxed pr-8">
+                    {selectedFaq?.question}
+                  </DialogTitle>
+                </div>
+              </DialogHeader>
+            </div>
+            
+            {/* Content with scroll area */}
+            <div className="bg-background">
+              <ScrollArea className="max-h-[60vh]">
+                <div className="px-6 py-6 md:px-8 md:py-8">
+                  <div className="prose prose-sm md:prose-base max-w-none">
+                    <p className="text-foreground/80 leading-[1.8] md:leading-[1.9] text-sm md:text-base whitespace-pre-wrap">
+                      {selectedFaq?.answer}
+                    </p>
+                  </div>
+                </div>
+              </ScrollArea>
+              
+              {/* Footer */}
+              <div className="border-t border-border px-6 py-4 md:px-8 md:py-5 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    Masih ada pertanyaan?
+                  </p>
+                  <Button 
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                    onClick={() => {
+                      setSelectedFaq(null);
+                      window.open('https://wa.me/6281233330042', '_blank');
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Hubungi Kami</span>
+                    <span className="sm:hidden">Chat</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 
