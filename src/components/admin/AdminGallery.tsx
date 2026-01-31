@@ -314,22 +314,28 @@ const AdminGallery = () => {
 
   const toggleActive = async (photo: GalleryPhoto) => {
     try {
+      const newActiveState = !photo.is_active;
+      
       const { error } = await supabase
         .from('gallery_photos')
-        .update({ is_active: !photo.is_active })
+        .update({ is_active: newActiveState })
         .eq('id', photo.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Toggle error:', error);
+        throw error;
+      }
 
+      // Update local state immediately
       setPhotos(prev =>
         prev.map(p =>
-          p.id === photo.id ? { ...p, is_active: !p.is_active } : p
+          p.id === photo.id ? { ...p, is_active: newActiveState } : p
         )
       );
 
       toast({
         title: 'Berhasil',
-        description: `Foto ${!photo.is_active ? 'ditampilkan' : 'disembunyikan'}`,
+        description: `Foto ${newActiveState ? 'ditampilkan' : 'disembunyikan'}`,
       });
     } catch (error) {
       console.error('Error toggling photo:', error);
