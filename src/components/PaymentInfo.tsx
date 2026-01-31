@@ -44,16 +44,6 @@ const PaymentInfo = () => {
     return () => ctx.revert();
   }, []);
   const steps = ['Lakukan pemesanan melalui form booking', 'Sistem akan menghasilkan Order ID & total pembayaran', 'Transfer ke rekening yang tertera', 'Upload bukti transfer melalui sistem', 'Admin memverifikasi pembayaran Anda', 'Status berubah menjadi LUNAS ✓'];
-  return <section ref={sectionRef} className="py-20 bg-white">
-      <div className="container">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          
-
-          <div className="payment-card">
-            
-          </div>
-        </div>
-      </div>
-    </section>;
+  return;
 };
 export default PaymentInfo;
