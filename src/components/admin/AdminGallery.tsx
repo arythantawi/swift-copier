@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,10 +40,10 @@ import {
   Trash2,
   Upload,
   Image as ImageIcon,
-  GripVertical,
   Eye,
   EyeOff,
   Loader2,
+  Grid3X3,
 } from 'lucide-react';
 
 interface GalleryPhoto {
@@ -120,7 +120,6 @@ const AdminGallery = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Error',
@@ -130,11 +129,10 @@ const AdminGallery = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: 'Error',
-        description: 'Ukuran file maksimal 5MB',
+        description: 'Ukuran file maksimal 10MB',
         variant: 'destructive',
       });
       return;
@@ -144,25 +142,33 @@ const AdminGallery = () => {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = fileName;
+  const uploadToGoogleDrive = async (file: File): Promise<string> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      throw new Error('Not authenticated');
+    }
 
-    const { error: uploadError } = await supabase.storage
-      .from('gallery')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
+    const formData = new FormData();
+    formData.append('file', file);
 
-    if (uploadError) throw uploadError;
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL || 'https://ojxydihfvorglvmqyyaq.supabase.co'}/functions/v1/upload-gallery-image`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+        body: formData,
+      }
+    );
 
-    const { data } = supabase.storage
-      .from('gallery')
-      .getPublicUrl(filePath);
+    const result = await response.json();
 
-    return data.publicUrl;
+    if (!response.ok) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    return result.imageUrl;
   };
 
   const openAddDialog = () => {
@@ -199,11 +205,21 @@ const AdminGallery = () => {
 
       let imageUrl = formData.image_url;
 
-      // Upload new image if selected
       if (uploadedFile) {
         setUploading(true);
-        imageUrl = await uploadImage(uploadedFile);
-        setUploading(false);
+        try {
+          imageUrl = await uploadToGoogleDrive(uploadedFile);
+        } catch (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast({
+            title: 'Error Upload',
+            description: 'Gagal mengupload gambar ke Google Drive',
+            variant: 'destructive',
+          });
+          return;
+        } finally {
+          setUploading(false);
+        }
       }
 
       if (!imageUrl) {
@@ -224,7 +240,6 @@ const AdminGallery = () => {
       };
 
       if (editingPhoto) {
-        // Update existing
         const { error } = await supabase
           .from('gallery_photos')
           .update(photoData)
@@ -237,7 +252,6 @@ const AdminGallery = () => {
           description: 'Foto berhasil diperbarui',
         });
       } else {
-        // Create new
         const maxOrder = Math.max(...photos.map(p => p.display_order), 0);
         const { error } = await supabase
           .from('gallery_photos')
@@ -334,9 +348,9 @@ const AdminGallery = () => {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-square rounded-xl" />
+        <div className="grid grid-cols-3 gap-1">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square" />
           ))}
         </div>
       </div>
@@ -349,11 +363,11 @@ const AdminGallery = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Camera className="w-6 h-6 text-primary" />
+            <Grid3X3 className="w-6 h-6 text-primary" />
             Kelola Galeri Foto
           </h2>
-          <p className="text-muted-foreground">
-            {photos.length} foto dalam galeri
+          <p className="text-muted-foreground text-sm">
+            {photos.length} foto • Tersimpan di Google Drive
           </p>
         </div>
         <Button onClick={openAddDialog}>
@@ -362,7 +376,7 @@ const AdminGallery = () => {
         </Button>
       </div>
 
-      {/* Photo Grid */}
+      {/* Instagram-style Grid Preview */}
       {photos.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -378,87 +392,72 @@ const AdminGallery = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-1 max-w-3xl">
           {photos.map((photo) => (
-            <Card 
-              key={photo.id} 
-              className={`overflow-hidden group ${!photo.is_active ? 'opacity-60' : ''}`}
+            <div
+              key={photo.id}
+              className={`group relative aspect-square overflow-hidden bg-muted ${!photo.is_active ? 'opacity-50' : ''}`}
             >
-              <div className="relative aspect-square">
-                <img
-                  src={photo.image_url}
-                  alt={photo.alt_text || photo.caption || 'Gallery photo'}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Status Badge */}
+              <img
+                src={photo.image_url}
+                alt={photo.alt_text || photo.caption || 'Gallery photo'}
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Status indicator */}
+              {!photo.is_active && (
                 <div className="absolute top-2 left-2">
-                  <Badge variant={photo.is_active ? 'default' : 'secondary'}>
-                    {photo.is_active ? (
-                      <>
-                        <Eye className="w-3 h-3 mr-1" />
-                        Aktif
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="w-3 h-3 mr-1" />
-                        Hidden
-                      </>
-                    )}
+                  <Badge variant="secondary" className="text-xs">
+                    <EyeOff className="w-3 h-3 mr-1" />
+                    Hidden
                   </Badge>
                 </div>
-
-                {/* Category Badge */}
-                {photo.category && (
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="outline" className="bg-background/80 capitalize">
-                      {photo.category}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Hover Actions */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    onClick={() => openEditDialog(photo)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    onClick={() => toggleActive(photo)}
-                  >
-                    {photo.is_active ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => {
-                      setPhotoToDelete(photo);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Caption */}
-              {photo.caption && (
-                <CardContent className="p-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {photo.caption}
-                  </p>
-                </CardContent>
               )}
-            </Card>
+
+              {/* Category */}
+              {photo.category && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="outline" className="bg-background/80 text-xs capitalize">
+                    {photo.category}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Hover Actions */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="h-8 w-8"
+                  onClick={() => openEditDialog(photo)}
+                >
+                  <Pencil className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="h-8 w-8"
+                  onClick={() => toggleActive(photo)}
+                >
+                  {photo.is_active ? (
+                    <EyeOff className="w-3 h-3" />
+                  ) : (
+                    <Eye className="w-3 h-3" />
+                  )}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setPhotoToDelete(photo);
+                    setIsDeleteDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -467,7 +466,8 @@ const AdminGallery = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="w-5 h-5" />
               {editingPhoto ? 'Edit Foto' : 'Tambah Foto Baru'}
             </DialogTitle>
           </DialogHeader>
@@ -489,7 +489,7 @@ const AdminGallery = () => {
                   <img
                     src={previewUrl}
                     alt="Preview"
-                    className="w-full aspect-video object-cover rounded-lg"
+                    className="w-full aspect-square object-cover rounded-lg"
                   />
                   <Button
                     size="sm"
@@ -504,14 +504,17 @@ const AdminGallery = () => {
               ) : (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="mt-2 border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  className="mt-2 border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors aspect-square flex flex-col items-center justify-center"
                 >
-                  <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                  <Upload className="w-10 h-10 text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">
                     Klik untuk upload gambar
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG, WEBP (max 5MB)
+                    JPG, PNG, WebP (max 10MB)
+                  </p>
+                  <p className="text-xs text-primary mt-2">
+                    Tersimpan di Google Drive
                   </p>
                 </div>
               )}
@@ -526,6 +529,7 @@ const AdminGallery = () => {
                 onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
                 placeholder="Deskripsi foto..."
                 className="mt-1"
+                rows={3}
               />
             </div>
 
@@ -590,7 +594,7 @@ const AdminGallery = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Foto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Foto ini akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+              Foto ini akan dihapus dari galeri. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
