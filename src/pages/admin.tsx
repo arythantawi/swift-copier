@@ -17,7 +17,7 @@ import AdminManifest from '@/components/admin/AdminManifest';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import AdminContent from '@/components/admin/AdminContent';
 import AdminVideos from '@/components/admin/AdminVideos';
-import AdminGallery from '@/components/admin/AdminGallery';
+
 import AdminDatabase from '@/components/admin/AdminDatabase';
 import AdminUsers from '@/components/admin/AdminUsers';
 import ReportFinance from '@/components/admin/ReportFinance';
@@ -51,8 +51,6 @@ const Admin = () => {
         return <AdminContent />;
       case 'videos':
         return <AdminVideos />;
-      case 'gallery':
-        return <AdminGallery />;
       case 'database':
         return <AdminDatabase />;
       case 'admin-users':
@@ -75,7 +73,7 @@ const Admin = () => {
       case 'analytics': return 'Analisa Data';
       case 'content': return 'Manajemen Konten';
       case 'videos': return 'Video Promosi';
-      case 'gallery': return 'Galeri Foto';
+      
       case 'database': return 'Kontrol Database';
       case 'admin-users': return 'Kelola Admin';
       case 'report-finance': return 'Laporan Keuangan';
