@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import { useFaqs } from '@/hooks/useSiteData';
-import { HelpCircle, MessageCircle, ChevronRight, X } from 'lucide-react';
+import { HelpCircle, MessageCircle, ChevronRight, ArrowLeft, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -22,12 +23,40 @@ interface FAQ {
   category: string | null;
 }
 
+type ViewState = 'categories' | 'questions' | 'answer';
+
 const FAQSection = forwardRef<HTMLElement>((_, ref) => {
-  // Use cached data from context instead of fetching directly
   const { faqs, isLoading } = useFaqs();
   const [showDescription, setShowDescription] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewState, setViewState] = useState<ViewState>('categories');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedFaq, setSelectedFaq] = useState<FAQ | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Group FAQs by category
+  const groupedFaqs = faqs.reduce((acc, faq) => {
+    const category = faq.category || 'Umum';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(faq);
+    return acc;
+  }, {} as Record<string, FAQ[]>);
+
+  const categories = Object.keys(groupedFaqs);
+
+  // Animate content when view changes
+  useEffect(() => {
+    if (contentRef.current && isOpen) {
+      gsap.fromTo(
+        contentRef.current,
+        { opacity: 0, y: 20, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' }
+      );
+    }
+  }, [viewState, selectedCategory, selectedFaq, isOpen]);
 
   useEffect(() => {
     if (faqs.length === 0) return;
@@ -45,20 +74,9 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
         onComplete: () => setShowDescription(true),
       });
 
-      gsap.from('.faq-content', {
+      gsap.from('.faq-cta-button', {
         scrollTrigger: {
-          trigger: '.faq-content',
-          start: 'top 85%',
-        },
-        y: 50,
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.out'
-      });
-
-      gsap.from('.faq-cta', {
-        scrollTrigger: {
-          trigger: '.faq-cta',
+          trigger: '.faq-cta-button',
           start: 'top 90%',
         },
         y: 30,
@@ -66,46 +84,48 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
         duration: 0.6,
         ease: 'power2.out'
       });
-
-      // Parallax for FAQ content
-      gsap.to('.faq-content', {
-        yPercent: -6,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.faq-content',
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1.5,
-        }
-      });
-
-      // Parallax for CTA
-      gsap.to('.faq-cta', {
-        yPercent: -8,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.faq-cta',
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1,
-        }
-      });
     }, sectionRef);
 
     return () => ctx.revert();
   }, [faqs.length]);
 
-  if (isLoading || faqs.length === 0) return null;
+  const handleOpenDialog = () => {
+    setIsOpen(true);
+    setViewState('categories');
+    setSelectedCategory(null);
+    setSelectedFaq(null);
+  };
 
-  // Group FAQs by category
-  const groupedFaqs = faqs.reduce((acc, faq) => {
-    const category = faq.category || 'Umum';
-    if (!acc[category]) {
-      acc[category] = [];
+  const handleSelectCategory = (category: string) => {
+    setSelectedCategory(category);
+    setViewState('questions');
+  };
+
+  const handleSelectQuestion = (faq: FAQ) => {
+    setSelectedFaq(faq);
+    setViewState('answer');
+  };
+
+  const handleBack = () => {
+    if (viewState === 'answer') {
+      setViewState('questions');
+      setSelectedFaq(null);
+    } else if (viewState === 'questions') {
+      setViewState('categories');
+      setSelectedCategory(null);
     }
-    acc[category].push(faq);
-    return acc;
-  }, {} as Record<string, FAQ[]>);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setTimeout(() => {
+      setViewState('categories');
+      setSelectedCategory(null);
+      setSelectedFaq(null);
+    }, 300);
+  };
+
+  if (isLoading || faqs.length === 0) return null;
 
   return (
     <section ref={ref || sectionRef} id="faq" className="py-12 md:py-20 bg-muted/20">
@@ -118,7 +138,7 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
           <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 md:mb-4">
             Pertanyaan yang Sering Diajukan
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto min-h-[2rem] text-sm md:text-base">
+          <p className="text-muted-foreground max-w-2xl mx-auto min-h-[2rem] text-sm md:text-base mb-8">
             {showDescription && (
               <Typewriter
                 text="Temukan jawaban untuk pertanyaan umum tentang layanan travel kami"
@@ -127,77 +147,145 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
               />
             )}
           </p>
+
+          {/* CTA Button */}
+          <Button
+            onClick={handleOpenDialog}
+            className="faq-cta-button bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground gap-2 px-6 md:px-8 py-5 md:py-6 text-base md:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Search className="w-5 h-5" />
+            Cari Jawaban
+          </Button>
         </div>
 
-        <div className="faq-content max-w-3xl mx-auto mb-8 md:mb-12">
-          {Object.entries(groupedFaqs).map(([category, categoryFaqs]) => (
-            <div key={category} className="mb-8">
-              {Object.keys(groupedFaqs).length > 1 && (
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  {category}
-                </h3>
-              )}
-              <div className="space-y-2 md:space-y-3">
-                {categoryFaqs.map((faq) => (
-                  <button
-                    key={faq.id}
-                    onClick={() => setSelectedFaq(faq)}
-                    className="w-full text-left bg-card rounded-lg md:rounded-xl border border-border px-4 md:px-6 py-4 md:py-5 hover:shadow-lg hover:border-primary/20 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground pr-4 text-sm md:text-base">
-                        {faq.question}
-                      </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* FAQ Detail Dialog - Modern Design */}
-        <Dialog open={!!selectedFaq} onOpenChange={(open) => !open && setSelectedFaq(null)}>
-          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-0 shadow-2xl">
-            {/* Header with gradient */}
+        {/* FAQ Dialog */}
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+          <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-0 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
+            {/* Header */}
             <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-5 md:px-8 md:py-6">
-              <DialogHeader className="space-y-0">
-                <div className="flex items-start gap-3">
+              <DialogHeader className="space-y-3">
+                <div className="flex items-center gap-3">
+                  {viewState !== 'categories' && (
+                    <button
+                      onClick={handleBack}
+                      className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-white" />
+                    </button>
+                  )}
                   <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <HelpCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
                   <DialogTitle className="text-lg md:text-xl font-bold text-white leading-relaxed pr-8">
-                    {selectedFaq?.question}
+                    {viewState === 'categories' && 'Pilih Kategori'}
+                    {viewState === 'questions' && selectedCategory}
+                    {viewState === 'answer' && selectedFaq?.question}
                   </DialogTitle>
                 </div>
+
+                {/* Category Badges */}
+                {viewState === 'categories' && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {categories.map((category) => (
+                      <Badge
+                        key={category}
+                        variant="secondary"
+                        className="bg-white/20 text-white border-white/30 hover:bg-white/30 cursor-pointer transition-all duration-200 px-3 py-1"
+                        onClick={() => handleSelectCategory(category)}
+                      >
+                        {category}
+                        <span className="ml-1.5 text-xs opacity-80">
+                          ({groupedFaqs[category].length})
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Current Category Badge */}
+                {(viewState === 'questions' || viewState === 'answer') && selectedCategory && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-white/20 text-white border-white/30 w-fit"
+                  >
+                    {selectedCategory}
+                  </Badge>
+                )}
               </DialogHeader>
             </div>
-            
-            {/* Content with scroll area */}
-            <div className="bg-background">
-              <ScrollArea className="max-h-[60vh]">
+
+            {/* Content */}
+            <div className="bg-background" ref={contentRef}>
+              <ScrollArea className="max-h-[50vh]">
                 <div className="px-6 py-6 md:px-8 md:py-8">
-                  <div className="prose prose-sm md:prose-base max-w-none">
-                    <p className="text-foreground/80 leading-[1.8] md:leading-[1.9] text-sm md:text-base whitespace-pre-wrap">
-                      {selectedFaq?.answer}
-                    </p>
-                  </div>
+                  {/* Categories View */}
+                  {viewState === 'categories' && (
+                    <div className="space-y-3">
+                      {categories.map((category) => (
+                        <button
+                          key={category}
+                          onClick={() => handleSelectCategory(category)}
+                          className="w-full text-left bg-muted/50 hover:bg-muted rounded-xl px-5 py-4 transition-all duration-200 group border border-transparent hover:border-primary/20 hover:shadow-md"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-semibold text-foreground">
+                                {category}
+                              </span>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {groupedFaqs[category].length} pertanyaan
+                              </p>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Questions View */}
+                  {viewState === 'questions' && selectedCategory && (
+                    <div className="space-y-2">
+                      {groupedFaqs[selectedCategory].map((faq, index) => (
+                        <button
+                          key={faq.id}
+                          onClick={() => handleSelectQuestion(faq)}
+                          className="w-full text-left bg-card hover:bg-muted/50 rounded-xl px-5 py-4 transition-all duration-200 group border border-border hover:border-primary/30 hover:shadow-md"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="font-medium text-foreground text-sm md:text-base">
+                              {faq.question}
+                            </span>
+                            <ChevronRight className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Answer View */}
+                  {viewState === 'answer' && selectedFaq && (
+                    <div className="prose prose-sm md:prose-base max-w-none">
+                      <p className="text-foreground/80 leading-[1.8] md:leading-[1.9] text-sm md:text-base whitespace-pre-wrap">
+                        {selectedFaq.answer}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
-              
+
               {/* Footer */}
               <div className="border-t border-border px-6 py-4 md:px-8 md:py-5 bg-muted/30">
                 <div className="flex items-center justify-between">
                   <p className="text-xs md:text-sm text-muted-foreground">
-                    Masih ada pertanyaan?
+                    {viewState === 'answer' ? 'Butuh bantuan lebih?' : 'Tidak menemukan jawaban?'}
                   </p>
-                  <Button 
+                  <Button
                     size="sm"
                     className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                     onClick={() => {
-                      setSelectedFaq(null);
+                      handleClose();
                       window.open('https://wa.me/6281233330042', '_blank');
                     }}
                   >
@@ -210,22 +298,6 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* CTA Section */}
-        <div className="faq-cta text-center">
-          <div className="inline-flex flex-col items-center p-6 md:p-8 bg-card rounded-xl md:rounded-2xl border border-border shadow-lg">
-            <p className="text-foreground font-medium mb-3 md:mb-4 text-sm md:text-base">
-              Tidak menemukan jawaban yang Anda cari?
-            </p>
-            <Button 
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground gap-2 px-5 md:px-6 py-4 md:py-5 text-sm md:text-base"
-              onClick={() => window.open('https://wa.me/6281233330042', '_blank')}
-            >
-              <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
-              Hubungi Kami
-            </Button>
-          </div>
-        </div>
       </div>
     </section>
   );
