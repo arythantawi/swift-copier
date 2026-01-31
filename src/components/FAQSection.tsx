@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import { useFaqs } from '@/hooks/useSiteData';
-import { HelpCircle, MessageCircle } from 'lucide-react';
+import { HelpCircle, MessageCircle, ChevronRight } from 'lucide-react';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -25,6 +26,7 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
   // Use cached data from context instead of fetching directly
   const { faqs, isLoading } = useFaqs();
   const [showDescription, setShowDescription] = useState(false);
+  const [selectedFaq, setSelectedFaq] = useState<FAQ | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -136,27 +138,39 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
                   {category}
                 </h3>
               )}
-              <Accordion type="single" collapsible className="space-y-2 md:space-y-3">
+              <div className="space-y-2 md:space-y-3">
                 {categoryFaqs.map((faq) => (
-                  <AccordionItem
+                  <button
                     key={faq.id}
-                    value={faq.id}
-                    className="bg-card rounded-lg md:rounded-xl border border-border px-4 md:px-6 data-[state=open]:shadow-lg data-[state=open]:border-primary/20 transition-all duration-300"
+                    onClick={() => setSelectedFaq(faq)}
+                    className="w-full text-left bg-card rounded-lg md:rounded-xl border border-border px-4 md:px-6 py-4 md:py-5 hover:shadow-lg hover:border-primary/20 transition-all duration-300 group"
                   >
-                    <AccordionTrigger className="text-left hover:no-underline py-4 md:py-5 [&[data-state=open]>svg]:rotate-180">
+                    <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground pr-4 text-sm md:text-base">
                         {faq.question}
                       </span>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 md:pb-5 text-muted-foreground leading-relaxed text-sm md:text-base">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </button>
                 ))}
-              </Accordion>
+              </div>
             </div>
           ))}
         </div>
+
+        {/* FAQ Detail Dialog */}
+        <Dialog open={!!selectedFaq} onOpenChange={(open) => !open && setSelectedFaq(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-lg md:text-xl font-bold text-foreground pr-6">
+                {selectedFaq?.question}
+              </DialogTitle>
+            </DialogHeader>
+            <DialogDescription className="text-muted-foreground leading-relaxed text-sm md:text-base pt-2">
+              {selectedFaq?.answer}
+            </DialogDescription>
+          </DialogContent>
+        </Dialog>
 
         {/* CTA Section */}
         <div className="faq-cta text-center">
