@@ -129,10 +129,10 @@ const AdminGallery = () => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'Error',
-        description: 'Ukuran file maksimal 10MB',
+        description: 'Ukuran file maksimal 5MB. Silakan kompres gambar terlebih dahulu.',
         variant: 'destructive',
       });
       return;

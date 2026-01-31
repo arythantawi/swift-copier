@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,12 +12,17 @@ const ALLOWED_MIME_TYPES = [
   'image/webp',
   'image/gif',
 ];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Reduced max file size for memory safety
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 async function getAccessToken(): Promise<string> {
   const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
   const refreshToken = Deno.env.get('GOOGLE_REFRESH_TOKEN');
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Google Drive credentials not configured');
+  }
 
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -26,9 +30,9 @@ async function getAccessToken(): Promise<string> {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: clientId!,
-      client_secret: clientSecret!,
-      refresh_token: refreshToken!,
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
       grant_type: 'refresh_token',
     }),
   });
@@ -37,13 +41,14 @@ async function getAccessToken(): Promise<string> {
 
   if (!response.ok) {
     console.error('Token refresh error:', data);
-    throw new Error('Gagal memproses permintaan');
+    throw new Error('Failed to refresh Google token');
   }
 
   return data.access_token;
 }
 
-async function uploadToDrive(
+// Use resumable upload for better memory efficiency
+async function uploadToDriveResumable(
   accessToken: string,
   fileContent: Uint8Array,
   fileName: string,
@@ -56,60 +61,56 @@ async function uploadToDrive(
     parents: folderId ? [folderId] : [],
   };
 
-  const boundary = '-------314159265358979323846';
-  const delimiter = "\r\n--" + boundary + "\r\n";
-  const closeDelim = "\r\n--" + boundary + "--";
-
-  const metadataString = JSON.stringify(metadata);
-
-  const encoder = new TextEncoder();
-  const metadataPart = encoder.encode(
-    delimiter +
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-      metadataString
-  );
-
-  const filePart = encoder.encode(
-    delimiter +
-      'Content-Type: ' +
-      mimeType +
-      '\r\n' +
-      'Content-Transfer-Encoding: base64\r\n\r\n'
-  );
-
-  const base64Content = encodeBase64(Uint8Array.from(fileContent).buffer);
-  const base64Part = encoder.encode(base64Content);
-
-  const closePart = encoder.encode(closeDelim);
-
-  const body = new Uint8Array(
-    metadataPart.length + filePart.length + base64Part.length + closePart.length
-  );
-  body.set(metadataPart, 0);
-  body.set(filePart, metadataPart.length);
-  body.set(base64Part, metadataPart.length + filePart.length);
-  body.set(closePart, metadataPart.length + filePart.length + base64Part.length);
-
-  const response = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,thumbnailLink',
+  // Step 1: Initiate resumable upload session
+  const initResponse = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
     {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': mimeType,
+        'X-Upload-Content-Length': fileContent.length.toString(),
       },
-      body: body,
+      body: JSON.stringify(metadata),
     }
   );
 
-  const data = await response.json();
-  
-  if (!response.ok) {
-    console.error('Drive upload error:', data);
-    throw new Error('Gagal mengunggah file');
+  if (!initResponse.ok) {
+    const errorData = await initResponse.text();
+    console.error('Resumable init error:', errorData);
+    throw new Error('Failed to initiate upload');
   }
 
-  // Make file publicly viewable
+  const uploadUri = initResponse.headers.get('Location');
+  if (!uploadUri) {
+    throw new Error('No upload URI received');
+  }
+
+  // Step 2: Upload file content using ReadableStream
+  const uploadResponse = await fetch(uploadUri, {
+    method: 'PUT',
+    headers: {
+      'Content-Length': fileContent.length.toString(),
+      'Content-Type': mimeType,
+    },
+    body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(fileContent);
+        controller.close();
+      }
+    }),
+  });
+
+  if (!uploadResponse.ok) {
+    const errorData = await uploadResponse.text();
+    console.error('Upload error:', errorData);
+    throw new Error('Failed to upload file');
+  }
+
+  const data = await uploadResponse.json();
+
+  // Step 3: Make file publicly viewable
   await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
     method: 'POST',
     headers: {
@@ -194,19 +195,19 @@ serve(async (req) => {
       );
     }
 
-    // File size validation
+    // File size validation - reduced to 5MB for edge function memory safety
     if (file.size > MAX_FILE_SIZE) {
       return new Response(
-        JSON.stringify({ error: 'Ukuran file melebihi batas 10MB' }),
+        JSON.stringify({ error: 'Ukuran file melebihi batas 5MB. Silakan kompres gambar terlebih dahulu.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`Processing gallery upload: ${file.name}, size: ${file.size}`);
+
     // Read file content
     const arrayBuffer = await file.arrayBuffer();
     const fileContent = new Uint8Array(arrayBuffer);
-
-    console.log(`Processing gallery upload: ${file.name}, size: ${file.size}`);
 
     // Get access token
     const accessToken = await getAccessToken();
@@ -216,8 +217,8 @@ serve(async (req) => {
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `gallery_${timestamp}_${sanitizedFileName}`;
 
-    // Upload to Google Drive
-    const driveResult = await uploadToDrive(accessToken, fileContent, fileName, file.type);
+    // Upload to Google Drive using resumable upload (more memory efficient)
+    const driveResult = await uploadToDriveResumable(accessToken, fileContent, fileName, file.type);
 
     console.log(`Gallery image uploaded to Drive: ${driveResult.id}`);
 
@@ -231,10 +232,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunggah file';
     console.error('Gallery upload error:', error);
     return new Response(
-      JSON.stringify({ error: 'Terjadi kesalahan saat mengunggah file' }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
