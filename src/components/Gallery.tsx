@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, X, Camera, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Grid3X3, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GalleryPhoto {
@@ -52,7 +52,6 @@ const Gallery = () => {
       setPhotos(data || []);
       setFilteredPhotos(data || []);
       
-      // Extract unique categories
       const uniqueCategories = [...new Set((data || []).map(p => p.category).filter(Boolean))] as string[];
       setCategories(uniqueCategories);
     } catch (error) {
@@ -87,7 +86,6 @@ const Gallery = () => {
     }
   }, [selectedIndex, filteredPhotos]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedPhoto) return;
@@ -111,15 +109,15 @@ const Gallery = () => {
 
   if (loading) {
     return (
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <Skeleton className="h-10 w-48 mx-auto mb-4" />
-            <Skeleton className="h-6 w-72 mx-auto" />
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center mb-8">
+            <Skeleton className="h-8 w-32 mx-auto mb-2" />
+            <Skeleton className="h-4 w-48 mx-auto" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded-xl" />
+          <div className="grid grid-cols-3 gap-1">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square" />
             ))}
           </div>
         </div>
@@ -129,12 +127,12 @@ const Gallery = () => {
 
   if (photos.length === 0) {
     return (
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <Camera className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Galeri Foto</h2>
-            <p className="text-muted-foreground">Belum ada foto yang ditampilkan.</p>
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center py-12">
+            <Grid3X3 className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Galeri Foto</h2>
+            <p className="text-muted-foreground text-sm">Belum ada foto yang ditampilkan.</p>
           </div>
         </div>
       </section>
@@ -142,59 +140,65 @@ const Gallery = () => {
   }
 
   return (
-    <section id="galeri" className="py-16 bg-gradient-to-b from-background to-muted/30">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <Badge variant="outline" className="mb-4 border-primary/30 text-primary">
-            <Camera className="w-3 h-3 mr-1" />
-            Galeri Foto
-          </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Momen Perjalanan Kami
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Koleksi foto perjalanan dan pelayanan 44 Trans yang menampilkan kenyamanan dan profesionalisme
+    <section id="galeri" className="py-12 bg-background border-t border-border">
+      <div className="container mx-auto px-4 max-w-4xl">
+        {/* Instagram-style Header */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Grid3X3 className="w-5 h-5 text-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-foreground">
+              Galeri
+            </h2>
+          </div>
+          <p className="text-muted-foreground text-sm text-center">
+            Momen perjalanan bersama 44 Trans
           </p>
         </div>
 
-        {/* Category Filter */}
+        {/* Category Tabs - Instagram Style */}
         {categories.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            <Button
-              variant={activeCategory === 'all' ? 'default' : 'outline'}
-              size="sm"
+          <div className="flex justify-center gap-8 mb-6 border-t border-border pt-4">
+            <button
               onClick={() => setActiveCategory('all')}
-              className="rounded-full"
+              className={cn(
+                "flex items-center gap-2 pb-3 text-xs uppercase tracking-widest transition-colors relative",
+                activeCategory === 'all' 
+                  ? "text-foreground font-semibold" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <Filter className="w-3 h-3 mr-1" />
+              <Grid3X3 className="w-3 h-3" />
               Semua
-            </Button>
+              {activeCategory === 'all' && (
+                <span className="absolute -top-px left-0 right-0 h-px bg-foreground" />
+              )}
+            </button>
             {categories.map(category => (
-              <Button
+              <button
                 key={category}
-                variant={activeCategory === category ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setActiveCategory(category)}
-                className="rounded-full capitalize"
+                className={cn(
+                  "pb-3 text-xs uppercase tracking-widest transition-colors relative",
+                  activeCategory === category 
+                    ? "text-foreground font-semibold" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
               >
                 {category}
-              </Button>
+                {activeCategory === category && (
+                  <span className="absolute -top-px left-0 right-0 h-px bg-foreground" />
+                )}
+              </button>
             ))}
           </div>
         )}
 
-        {/* Photo Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Instagram-style Photo Grid - 3 columns, minimal gap */}
+        <div className="grid grid-cols-3 gap-0.5 md:gap-1">
           {filteredPhotos.map((photo, index) => (
             <div
               key={photo.id}
-              className={cn(
-                "group relative aspect-square rounded-xl overflow-hidden cursor-pointer",
-                "transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl",
-                "bg-muted animate-fade-in"
-              )}
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="group relative aspect-square cursor-pointer overflow-hidden bg-muted"
               onClick={() => openLightbox(photo, index)}
             >
               {/* Skeleton while loading */}
@@ -202,133 +206,134 @@ const Gallery = () => {
                 <div className="absolute inset-0 bg-muted animate-pulse" />
               )}
               
-              {/* Image with lazy loading */}
+              {/* Image */}
               <img
                 src={photo.image_url}
                 alt={photo.alt_text || photo.caption || 'Foto galeri 44 Trans'}
                 loading="lazy"
                 onLoad={() => handleImageLoad(photo.id)}
                 className={cn(
-                  "w-full h-full object-cover transition-all duration-500",
-                  "group-hover:scale-110",
+                  "w-full h-full object-cover transition-opacity duration-300",
                   imageLoaded[photo.id] ? 'opacity-100' : 'opacity-0'
                 )}
               />
 
-              {/* Hover Overlay */}
+              {/* Instagram-style Hover Overlay */}
               <div className={cn(
-                "absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-                "flex flex-col justify-end p-4"
+                "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                "flex items-center justify-center"
               )}>
-                {photo.caption && (
-                  <p className="text-white text-sm font-medium line-clamp-2">
-                    {photo.caption}
-                  </p>
-                )}
-                {photo.category && (
-                  <Badge variant="secondary" className="w-fit mt-2 text-xs">
-                    {photo.category}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-6 text-white">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-6 h-6 fill-white" />
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="text-center mt-8 text-muted-foreground text-sm">
-          Menampilkan {filteredPhotos.length} dari {photos.length} foto
+        {/* Posts count */}
+        <div className="text-center mt-6">
+          <p className="text-muted-foreground text-xs uppercase tracking-wider">
+            {filteredPhotos.length} Foto
+          </p>
         </div>
       </div>
 
-      {/* Lightbox Modal */}
+      {/* Instagram-style Lightbox Modal */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => closeLightbox()}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 rounded-full"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-
-            {/* Navigation Buttons */}
-            {selectedIndex > 0 && (
+        <DialogContent className="max-w-5xl max-h-[95vh] p-0 bg-background border-none overflow-hidden">
+          <div className="flex flex-col md:flex-row h-full">
+            {/* Image Section */}
+            <div className="relative flex-1 bg-black flex items-center justify-center min-h-[300px] md:min-h-[500px]">
+              {/* Close Button */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={navigatePrev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 rounded-full h-12 w-12"
+                onClick={closeLightbox}
+                className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 rounded-full"
               >
-                <ChevronLeft className="w-8 h-8" />
+                <X className="w-6 h-6" />
               </Button>
-            )}
-            
-            {selectedIndex < filteredPhotos.length - 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={navigateNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 rounded-full h-12 w-12"
-              >
-                <ChevronRight className="w-8 h-8" />
-              </Button>
-            )}
 
-            {/* Main Image */}
-            {selectedPhoto && (
-              <div className="flex flex-col items-center max-h-[90vh] p-4">
+              {/* Navigation Buttons */}
+              {selectedIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={navigatePrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 rounded-full h-10 w-10"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+              )}
+              
+              {selectedIndex < filteredPhotos.length - 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={navigateNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 rounded-full h-10 w-10"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              )}
+
+              {/* Main Image */}
+              {selectedPhoto && (
                 <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.alt_text || selectedPhoto.caption || 'Foto galeri 44 Trans'}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                  className="max-w-full max-h-[500px] object-contain"
                 />
-                
-                {/* Caption */}
-                {selectedPhoto.caption && (
-                  <div className="mt-4 text-center text-white max-w-2xl">
-                    <p className="text-lg">{selectedPhoto.caption}</p>
-                    {selectedPhoto.category && (
-                      <Badge variant="secondary" className="mt-2">
-                        {selectedPhoto.category}
-                      </Badge>
-                    )}
-                  </div>
-                )}
+              )}
+            </div>
 
-                {/* Navigation Dots */}
-                <div className="flex gap-1.5 mt-4">
-                  {filteredPhotos.slice(
-                    Math.max(0, selectedIndex - 3),
-                    Math.min(filteredPhotos.length, selectedIndex + 4)
-                  ).map((_, i) => {
-                    const actualIndex = Math.max(0, selectedIndex - 3) + i;
-                    return (
-                      <button
-                        key={actualIndex}
-                        onClick={() => {
-                          setSelectedIndex(actualIndex);
-                          setSelectedPhoto(filteredPhotos[actualIndex]);
-                        }}
-                        className={cn(
-                          "w-2 h-2 rounded-full transition-all",
-                          actualIndex === selectedIndex 
-                            ? "bg-white w-6" 
-                            : "bg-white/40 hover:bg-white/60"
-                        )}
-                      />
-                    );
-                  })}
+            {/* Instagram-style Caption Section */}
+            {selectedPhoto && (
+              <div className="w-full md:w-80 bg-background border-t md:border-t-0 md:border-l border-border flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">44</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">44 Trans</p>
+                      <p className="text-xs text-muted-foreground">Jawa Bali</p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Counter */}
-                <p className="text-white/60 text-sm mt-2">
-                  {selectedIndex + 1} / {filteredPhotos.length}
-                </p>
+                {/* Caption Content */}
+                <div className="flex-1 p-4 overflow-y-auto">
+                  {selectedPhoto.caption && (
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex-shrink-0 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">44</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-foreground">
+                          <span className="font-semibold mr-2">44trans</span>
+                          {selectedPhoto.caption}
+                        </p>
+                        {selectedPhoto.category && (
+                          <Badge variant="secondary" className="mt-2 text-xs capitalize">
+                            #{selectedPhoto.category}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer with counter */}
+                <div className="p-4 border-t border-border">
+                  <p className="text-xs text-muted-foreground">
+                    {selectedIndex + 1} dari {filteredPhotos.length} foto
+                  </p>
+                </div>
               </div>
             )}
           </div>
