@@ -431,9 +431,11 @@ const FAQSection = forwardRef<HTMLElement>((_, ref) => {
                   {/* Answer View */}
                   {viewState === 'answer' && selectedFaq && (
                     <div className="prose prose-sm md:prose-base max-w-none">
-                      <p className="text-foreground/80 leading-[1.8] md:leading-[1.9] text-sm md:text-base whitespace-pre-wrap">
-                        {selectedFaq.answer}
-                      </p>
+                      <div className="max-h-[40vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                        <p className="text-foreground/80 leading-[1.8] md:leading-[1.9] text-sm md:text-base whitespace-pre-wrap">
+                          {selectedFaq.answer}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
