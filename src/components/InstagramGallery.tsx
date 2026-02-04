@@ -106,7 +106,7 @@ const InstagramGallery = () => {
           {/* Badge with glow effect */}
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 backdrop-blur-sm text-primary px-5 py-2.5 rounded-full text-sm font-semibold mb-6 border border-primary/20 shadow-lg shadow-primary/10">
             <Sparkles className="w-4 h-4" />
-            <span>@44trans_official</span>
+            <span>@44transjawabali</span>
             <Instagram className="w-4 h-4" />
           </div>
           
@@ -139,12 +139,12 @@ const InstagramGallery = () => {
                   <Instagram className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground text-sm md:text-base">44trans_official</p>
+                  <p className="font-bold text-foreground text-sm md:text-base">44transjawabali</p>
                   <p className="text-xs text-muted-foreground">Travel & Transportation</p>
                 </div>
               </div>
               <a
-                href="https://www.instagram.com/44trans_official"
+                href="https://www.instagram.com/44transjawabali"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-95"
@@ -200,7 +200,7 @@ const InstagramGallery = () => {
         {/* Bottom CTA with modern styling */}
         <div className="text-center mt-10 md:mt-14">
           <a
-            href="https://www.instagram.com/44trans_official"
+            href="https://www.instagram.com/44transjawabali"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300"
