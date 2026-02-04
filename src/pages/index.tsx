@@ -14,7 +14,7 @@ import VideoSection from '@/components/VideoSection';
 import PremiumServices from '@/components/PremiumServices';
 import Features from '@/components/Features';
 import Testimonials from '@/components/Testimonials';
-
+import InstagramGallery from '@/components/InstagramGallery';
 import FAQSection from '@/components/FAQSection';
 import Footer from '@/components/Footer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
@@ -65,6 +65,7 @@ const Index = () => {
         <PremiumServices />
         <Features />
         <Testimonials />
+        <InstagramGallery />
         <FAQSection />
       </main>
       <Footer />
