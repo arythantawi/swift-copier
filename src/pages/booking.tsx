@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PaymentInfoBooking from '@/components/PaymentInfoBooking';
 import PaymentUpload from '@/components/PaymentUpload';
+import TransactionIndicator from '@/components/ui/transaction-indicator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { generateTicketPdf } from '@/lib/generateTicketPdf';
@@ -1191,6 +1192,18 @@ const Booking = () => {
                     <p className="text-sm text-red-600 dark:text-red-400 text-center">
                       ⚠️ Tidak dapat melanjutkan: Lokasi di luar area layanan Surabaya
                     </p>
+                  )}
+
+                  {/* Transaction State Indicator */}
+                  {atomicBooking.isTransacting && (
+                    <div className="mb-4 p-3 rounded-lg bg-secondary/50 border border-border">
+                      <TransactionIndicator 
+                        state={atomicBooking.transactionState}
+                        retryCount={atomicBooking.retryCount}
+                        maxRetries={3}
+                        showProgress={true}
+                      />
+                    </div>
                   )}
 
                   <Button 
