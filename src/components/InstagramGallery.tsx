@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Instagram, Sparkles } from 'lucide-react';
+import { Instagram, Sparkles, ExternalLink } from 'lucide-react';
+import { SectionBadge, GlowButton, IconBox } from '@/components/atoms';
+import { SectionHeader } from '@/components/molecules';
+import { SectionWrapper } from '@/components/templates';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const InstagramGallery = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLDivElement>(null);
   const decorRef = useRef<HTMLDivElement>(null);
 
@@ -29,15 +32,11 @@ const InstagramGallery = () => {
         });
       }
 
-      // Title animation with stagger
-      if (titleRef.current) {
+      // Header animation with stagger
+      if (headerRef.current) {
         gsap.fromTo(
-          titleRef.current.children,
-          {
-            y: 50,
-            opacity: 0,
-            rotateX: -15,
-          },
+          headerRef.current.children,
+          { y: 50, opacity: 0, rotateX: -15 },
           {
             y: 0,
             opacity: 1,
@@ -46,7 +45,7 @@ const InstagramGallery = () => {
             stagger: 0.12,
             ease: 'power4.out',
             scrollTrigger: {
-              trigger: titleRef.current,
+              trigger: headerRef.current,
               start: 'top 85%',
               once: true,
             },
@@ -58,12 +57,7 @@ const InstagramGallery = () => {
       if (iframeRef.current) {
         gsap.fromTo(
           iframeRef.current,
-          {
-            y: 80,
-            opacity: 0,
-            scale: 0.9,
-            rotateY: -5,
-          },
+          { y: 80, opacity: 0, scale: 0.9, rotateY: -5 },
           {
             y: 0,
             opacity: 1,
@@ -92,7 +86,7 @@ const InstagramGallery = () => {
       {/* Modern gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-muted/50 via-background to-primary/5" />
       
-      {/* Decorative elements */}
+      {/* Decorative floating elements */}
       <div ref={decorRef} className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="floating-decor absolute top-20 left-[10%] w-20 h-20 rounded-full bg-primary/10 blur-2xl" />
         <div className="floating-decor absolute top-40 right-[15%] w-32 h-32 rounded-full bg-accent/20 blur-3xl" />
@@ -101,24 +95,19 @@ const InstagramGallery = () => {
       </div>
 
       <div className="container relative mx-auto px-4">
-        {/* Modern Header */}
-        <div ref={titleRef} className="text-center mb-12 md:mb-16" style={{ perspective: '1000px' }}>
-          {/* Badge with glow effect */}
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 backdrop-blur-sm text-primary px-5 py-2.5 rounded-full text-sm font-semibold mb-6 border border-primary/20 shadow-lg shadow-primary/10">
-            <Sparkles className="w-4 h-4" />
-            <span>@44transjawabali</span>
-            <Instagram className="w-4 h-4" />
-          </div>
+        {/* Atomic Header using molecules */}
+        <div ref={headerRef} className="text-center mb-12 md:mb-16" style={{ perspective: '1000px' }}>
+          <SectionBadge icon={Sparkles} iconPosition="both" variant="glow" className="mb-6">
+            @44transjawabali
+          </SectionBadge>
           
-          {/* Main title with gradient */}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-            Ikuti Kami di Instagram
-          </h2>
-          
-          {/* Subtitle with better typography */}
-          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Lihat momen perjalanan terbaik, promo eksklusif, dan update terbaru dari <span className="text-primary font-semibold">44 Trans</span>
-          </p>
+          <SectionHeader
+            title="Ikuti Kami di Instagram"
+            titleGradient
+            titleSize="lg"
+            description="Lihat momen perjalanan terbaik, promo eksklusif, dan update terbaru dari 44 Trans"
+            align="center"
+          />
         </div>
 
         {/* Instagram Embed Container - Glass morphism style */}
@@ -135,9 +124,7 @@ const InstagramGallery = () => {
             {/* Top bar - mimics app header */}
             <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-muted/80 to-muted/40 border-b border-border/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Instagram className="w-5 h-5 text-primary-foreground" />
-                </div>
+                <IconBox icon={Instagram} variant="gradient" size="md" />
                 <div>
                   <p className="font-bold text-foreground text-sm md:text-base">44transjawabali</p>
                   <p className="text-xs text-muted-foreground">Travel & Transportation</p>
@@ -197,19 +184,20 @@ const InstagramGallery = () => {
           </div>
         </div>
 
-        {/* Bottom CTA with modern styling */}
-        <div className="text-center mt-10 md:mt-14">
-          <a
+        {/* Bottom CTA using atomic button */}
+        <div className="text-center mt-10 md:mt-14 space-y-4">
+          <GlowButton
             href="https://www.instagram.com/44transjawabali"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300"
+            icon={ExternalLink}
+            iconPosition="right"
+            variant="primary"
+            size="lg"
           >
-            <Instagram className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
-            <span>Kunjungi Instagram Kami</span>
-            <div className="w-2 h-2 rounded-full bg-primary-foreground/80 animate-pulse" />
-          </a>
-          <p className="mt-4 text-sm text-muted-foreground">
+            <Instagram className="w-5 h-5 mr-1" />
+            Kunjungi Instagram Kami
+          </GlowButton>
+          
+          <p className="text-sm text-muted-foreground">
             Follow untuk promo & info terbaru
           </p>
         </div>
