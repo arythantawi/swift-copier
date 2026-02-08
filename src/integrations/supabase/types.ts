@@ -269,30 +269,6 @@ export type Database = {
         }
         Relationships: []
       }
-      messages: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          id: string
-          phone: string
-          role: string | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          phone: string
-          role?: string | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          id?: string
-          phone?: string
-          role?: string | null
-        }
-        Relationships: []
-      }
       promos: {
         Row: {
           created_at: string
