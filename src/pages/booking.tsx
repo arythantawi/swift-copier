@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, Users, Calendar, User, Phone, Mail, MapPinned, CheckCircle, Printer, Navigation, Edit3, Loader2, Map, AlertTriangle, Building2, LogIn } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Users, Calendar, User, Phone, Mail, MapPinned, CheckCircle, Printer, Navigation, Edit3, Loader2, Map, AlertTriangle, Building2, LogIn, ShieldCheck, RefreshCw } from 'lucide-react';
 
 // Lazy load MiniMap to avoid SSR issues with Leaflet
 const MiniMap = lazy(() => import('@/components/MiniMap'));
@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateTicketPdf } from '@/lib/generateTicketPdf';
 import { getRoutePrice } from '@/lib/scheduleData';
 import { useAuth } from '@/hooks/useAuth';
+import { useIdempotency } from '@/hooks/useIdempotency';
+import { useAtomicBooking, BookingData } from '@/hooks/useAtomicBooking';
 
 type BookingStep = 'form' | 'payment' | 'success';
 type AddressMode = 'gps' | 'manual';
@@ -24,7 +26,17 @@ const Booking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Atomic booking and idempotency hooks - MUST be before any conditional returns
+  const idempotency = useIdempotency({ 
+    ttl: 5 * 60 * 1000, // 5 minutes
+    storagePrefix: 'booking' 
+  });
+  const atomicBooking = useAtomicBooking({ 
+    maxRetries: 3, 
+    baseDelay: 1000 
+  });
+  
   const [currentStep, setCurrentStep] = useState<BookingStep>('form');
   const [orderId, setOrderId] = useState<string>('');
   const [paymentUploaded, setPaymentUploaded] = useState(false);
@@ -481,9 +493,10 @@ const Booking = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
     if (!formData.name || !formData.phone || !formData.pickupAddress) {
       toast.error('Mohon lengkapi data yang diperlukan');
       return;
@@ -494,76 +507,91 @@ const Booking = () => {
       return;
     }
 
-    setIsSubmitting(true);
+    // Idempotency check - prevent double submission
+    const idempotencyKey = idempotency.generateKey({
+      name: formData.name,
+      phone: formData.phone,
+      route: `${from}-${to}`,
+      date: travelDate,
+      time: pickupTime,
+      passengers,
+    });
 
-    // Generate order_id on client so we don't need SELECT/RETURNING (blocked by RLS for anon)
-    // Format: TRV-YYYYMMDD-XXXX (must match backend validation)
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const newOrderId = `TRV-${dateStr}-${random}`;
+    if (!idempotency.startProcessing()) {
+      toast.warning('Pemesanan sedang diproses, harap tunggu...');
+      return;
+    }
+
+    // Prepare booking data for atomic transaction
+    const bookingData: BookingData = {
+      customer_name: formData.name,
+      customer_phone: formData.phone,
+      customer_email: formData.email || null,
+      pickup_address: formData.pickupAddress,
+      dropoff_address: formData.dropoffAddress || null,
+      notes: formData.notes || null,
+      route_from: from,
+      route_to: to,
+      route_via: via || null,
+      pickup_time: pickupTime,
+      travel_date: travelDate,
+      passengers: passengers,
+      total_price: totalPrice,
+      user_id: user?.id || null,
+    };
 
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .insert([
-          {
-            customer_name: formData.name,
-            customer_phone: formData.phone,
-            customer_email: formData.email || null,
-            pickup_address: formData.pickupAddress,
-            dropoff_address: formData.dropoffAddress || null,
-            notes: formData.notes || null,
-            route_from: from,
-            route_to: to,
-            route_via: via || null,
-            pickup_time: pickupTime,
-            travel_date: travelDate,
-            passengers: passengers,
-            total_price: totalPrice,
-            payment_status: 'pending',
-            order_id: newOrderId,
-            user_id: user?.id || null,
-          },
-        ]);
+      // Execute atomic booking with retry logic
+      const result = await atomicBooking.executeBooking(bookingData, idempotencyKey);
 
-      if (error) throw error;
-
-      // Send email notification (don't block on this)
-      supabase.functions.invoke('send-booking-notification', {
-        body: {
-          orderId: newOrderId,
-          customerName: formData.name,
-          customerPhone: formData.phone,
-          customerEmail: formData.email || undefined,
-          routeFrom: from,
-          routeTo: to,
-          routeVia: via || undefined,
-          pickupTime: pickupTime,
-          travelDate: travelDate,
-          passengers: passengers,
-          totalPrice: totalPrice,
-          pickupAddress: formData.pickupAddress,
-          dropoffAddress: formData.dropoffAddress || undefined,
-        },
-      }).then((result) => {
-        if (result.error) {
-          console.error('Failed to send notification:', result.error);
-        } else {
-          console.log('Notification sent:', result.data);
+      if (result.success && result.orderId) {
+        idempotency.completeProcessing();
+        
+        // Show retry info if applicable
+        if (result.retryCount && result.retryCount > 0) {
+          console.log(`Booking succeeded after ${result.retryCount} retries`);
         }
-      }).catch(console.error);
 
-      setOrderId(newOrderId);
-      setCurrentStep('payment');
-      toast.success('Pemesanan berhasil dibuat!');
+        // Send email notification (don't block on this)
+        supabase.functions.invoke('send-booking-notification', {
+          body: {
+            orderId: result.orderId,
+            customerName: formData.name,
+            customerPhone: formData.phone,
+            customerEmail: formData.email || undefined,
+            routeFrom: from,
+            routeTo: to,
+            routeVia: via || undefined,
+            pickupTime: pickupTime,
+            travelDate: travelDate,
+            passengers: passengers,
+            totalPrice: totalPrice,
+            pickupAddress: formData.pickupAddress,
+            dropoffAddress: formData.dropoffAddress || undefined,
+          },
+        }).then((notifResult) => {
+          if (notifResult.error) {
+            console.error('Failed to send notification:', notifResult.error);
+          } else {
+            console.log('Notification sent:', notifResult.data);
+          }
+        }).catch(console.error);
+
+        setOrderId(result.orderId);
+        setCurrentStep('payment');
+        toast.success('Pemesanan berhasil dibuat!', {
+          icon: <ShieldCheck className="w-5 h-5 text-green-500" />,
+        });
+      } else {
+        idempotency.failProcessing();
+        toast.error(result.error || 'Gagal membuat pemesanan. Silakan coba lagi.');
+      }
     } catch (error) {
       console.error('Error creating booking:', error);
-      toast.error('Gagal membuat pemesanan. Silakan coba lagi.');
-    } finally {
-      setIsSubmitting(false);
+      idempotency.failProcessing();
+      toast.error('Terjadi kesalahan. Silakan coba lagi.');
     }
-  };
+  }, [formData, travelDate, from, to, via, pickupTime, passengers, totalPrice, user, idempotency, atomicBooking]);
 
   const handlePaymentUploadSuccess = () => {
     setPaymentUploaded(true);
@@ -1168,9 +1196,16 @@ const Booking = () => {
                   <Button 
                     type="submit" 
                     className="w-full btn-gold py-6 text-lg"
-                    disabled={isSubmitting || (addressMode === 'gps' && isOutsideServiceArea)}
+                    disabled={atomicBooking.isTransacting || idempotency.isLocked || (addressMode === 'gps' && isOutsideServiceArea)}
                   >
-                    {isSubmitting ? 'Memproses...' : 'Lanjut ke Pembayaran'}
+                    {atomicBooking.isTransacting ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        {atomicBooking.retryCount > 0 
+                          ? `Mencoba ulang (${atomicBooking.retryCount})...` 
+                          : 'Memproses...'}
+                      </span>
+                    ) : 'Lanjut ke Pembayaran'}
                   </Button>
                 </form>
               </div>
