@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,11 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Loader2, Search } from 'lucide-react';
+import { Plus, Loader2, Search, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIdempotency } from '@/hooks/useIdempotency';
+import { useAtomicBooking, BookingData } from '@/hooks/useAtomicBooking';
+import TransactionIndicator from '@/components/ui/transaction-indicator';
 
 interface Schedule {
   id: string;
@@ -39,9 +42,18 @@ interface OfflineBookingFormProps {
 
 const OfflineBookingForm = ({ onBookingCreated }: OfflineBookingFormProps) => {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [scheduleSearch, setScheduleSearch] = useState('');
+  
+  // Atomic booking and idempotency hooks
+  const idempotency = useIdempotency({ 
+    ttl: 5 * 60 * 1000, // 5 minutes
+    storagePrefix: 'offline_booking' 
+  });
+  const atomicBooking = useAtomicBooking({ 
+    maxRetries: 3, 
+    baseDelay: 1000 
+  });
   
   // Form state
   const [customerName, setCustomerName] = useState('');
@@ -73,14 +85,7 @@ const OfflineBookingForm = ({ onBookingCreated }: OfflineBookingFormProps) => {
     }
   };
 
-  const generateOrderId = () => {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `TRV-${dateStr}-${random}`;
-  };
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setCustomerName('');
     setCustomerPhone('');
     setCustomerEmail('');
@@ -91,9 +96,11 @@ const OfflineBookingForm = ({ onBookingCreated }: OfflineBookingFormProps) => {
     setDropoffAddress('');
     setNotes('');
     setPaymentStatus('paid');
-  };
+    idempotency.reset();
+    atomicBooking.reset();
+  }, [idempotency, atomicBooking]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!customerName.trim() || !customerPhone.trim() || !selectedScheduleId || !travelDate || !pickupAddress.trim()) {
@@ -107,43 +114,83 @@ const OfflineBookingForm = ({ onBookingCreated }: OfflineBookingFormProps) => {
       return;
     }
 
-    setIsLoading(true);
-    
+    // Generate idempotency key based on form data
+    const idempotencyKey = idempotency.generateKey({
+      name: customerName,
+      phone: customerPhone,
+      route: `${selectedSchedule.route_from}-${selectedSchedule.route_to}`,
+      date: travelDate,
+      time: selectedSchedule.pickup_time,
+      passengers,
+      isOffline: true,
+    });
+
+    // Check idempotency - prevent double submission
+    if (!idempotency.startProcessing()) {
+      toast.warning('Pesanan sedang diproses, harap tunggu...');
+      return;
+    }
+
+    const totalPriceCalc = selectedSchedule.price * passengers;
+
+    // Prepare booking data for atomic transaction
+    const bookingData: BookingData = {
+      customer_name: customerName.trim(),
+      customer_phone: customerPhone.trim(),
+      customer_email: customerEmail.trim() || null,
+      pickup_address: pickupAddress.trim(),
+      dropoff_address: dropoffAddress.trim() || null,
+      notes: notes.trim() ? `[OFFLINE] ${notes.trim()}` : '[OFFLINE]',
+      route_from: selectedSchedule.route_from,
+      route_to: selectedSchedule.route_to,
+      route_via: selectedSchedule.route_via || null,
+      pickup_time: selectedSchedule.pickup_time,
+      travel_date: travelDate,
+      passengers: passengers,
+      total_price: totalPriceCalc,
+      user_id: null, // Offline bookings don't have a user
+    };
+
     try {
-      const orderId = generateOrderId();
-      const totalPrice = selectedSchedule.price * passengers;
+      // Execute atomic booking with retry logic
+      const result = await atomicBooking.executeBooking(bookingData, idempotencyKey);
 
-      const { error } = await supabase.from('bookings').insert({
-        order_id: orderId,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
-        customer_email: customerEmail.trim() || null,
-        route_from: selectedSchedule.route_from,
-        route_to: selectedSchedule.route_to,
-        route_via: selectedSchedule.route_via,
-        pickup_time: selectedSchedule.pickup_time,
-        travel_date: travelDate,
-        passengers: passengers,
-        total_price: totalPrice,
-        pickup_address: pickupAddress.trim(),
-        dropoff_address: dropoffAddress.trim() || null,
-        notes: notes.trim() ? `[OFFLINE] ${notes.trim()}` : '[OFFLINE]',
-        payment_status: paymentStatus,
-      });
+      if (result.success && result.orderId) {
+        idempotency.completeProcessing();
+        
+        // Update payment status if different from pending
+        if (paymentStatus !== 'pending' && result.orderId) {
+          await supabase
+            .from('bookings')
+            .update({ payment_status: paymentStatus })
+            .eq('order_id', result.orderId);
+        }
 
-      if (error) throw error;
+        // Show retry info if applicable
+        if (result.retryCount && result.retryCount > 0) {
+          console.log(`Offline booking succeeded after ${result.retryCount} retries`);
+        }
 
-      toast.success(`Pesanan offline berhasil dibuat: ${orderId}`);
-      resetForm();
-      setOpen(false);
-      onBookingCreated();
+        toast.success(`Pesanan offline berhasil dibuat: ${result.orderId}`, {
+          icon: <ShieldCheck className="w-5 h-5 text-green-500" />,
+        });
+        resetForm();
+        setOpen(false);
+        onBookingCreated();
+      } else {
+        idempotency.failProcessing();
+        toast.error(result.error || 'Gagal membuat pesanan offline. Silakan coba lagi.');
+      }
     } catch (error) {
       console.error('Error creating offline booking:', error);
-      toast.error('Gagal membuat pesanan offline');
-    } finally {
-      setIsLoading(false);
+      idempotency.failProcessing();
+      toast.error('Terjadi kesalahan. Silakan coba lagi.');
     }
-  };
+  }, [
+    customerName, customerPhone, customerEmail, selectedScheduleId, 
+    travelDate, passengers, pickupAddress, dropoffAddress, notes, 
+    paymentStatus, schedules, idempotency, atomicBooking, resetForm, onBookingCreated
+  ]);
 
   const selectedSchedule = schedules.find(s => s.id === selectedScheduleId);
   const totalPrice = selectedSchedule ? selectedSchedule.price * passengers : 0;
@@ -357,13 +404,31 @@ const OfflineBookingForm = ({ onBookingCreated }: OfflineBookingFormProps) => {
             </div>
           )}
 
+          {/* Transaction State Indicator */}
+          {atomicBooking.isTransacting && (
+            <div className="mb-4 p-3 rounded-lg bg-secondary/50 border border-border">
+              <TransactionIndicator 
+                state={atomicBooking.transactionState}
+                retryCount={atomicBooking.retryCount}
+                maxRetries={3}
+                showProgress={true}
+              />
+            </div>
+          )}
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={atomicBooking.isTransacting}>
               Batal
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Simpan Pesanan
+            <Button type="submit" disabled={atomicBooking.isTransacting || idempotency.isLocked}>
+              {atomicBooking.isTransacting ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {atomicBooking.retryCount > 0 
+                    ? `Mencoba ulang (${atomicBooking.retryCount})...` 
+                    : 'Memproses...'}
+                </span>
+              ) : 'Simpan Pesanan'}
             </Button>
           </DialogFooter>
         </form>
