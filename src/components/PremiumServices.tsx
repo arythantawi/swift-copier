@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Crown, Car, Heart, Plane, Users, Briefcase, MapPin, Sparkles } from "lucide-react";
+import { Crown, Car, Heart, Plane, Users, Briefcase, MapPin, Sparkles, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -35,6 +36,7 @@ const fallbackFleets = [
 const PremiumServices = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const [fleets, setFleets] = useState<FleetVehicle[]>(fallbackFleets);
+  const [selectedFleet, setSelectedFleet] = useState<FleetVehicle | null>(null);
 
   useEffect(() => {
     const fetchFleets = async () => {
@@ -96,6 +98,7 @@ const PremiumServices = () => {
   };
 
   return (
+    <>
     <section ref={sectionRef} className="py-12 md:py-20 bg-white">
       <div className="container px-4 sm:px-6">
         {/* Header */}
@@ -152,14 +155,22 @@ const PremiumServices = () => {
                 className="fleet-card group relative bg-card rounded-2xl border border-border overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
               >
                 {/* Image */}
-                <div className="aspect-[4/3] bg-gradient-to-br from-muted/80 to-muted overflow-hidden">
+                <div
+                  className="aspect-[4/3] bg-gradient-to-br from-muted/80 to-muted overflow-hidden cursor-pointer relative"
+                  onClick={() => fleet.image_url && setSelectedFleet(fleet)}
+                >
                   {fleet.image_url ? (
-                    <img
-                      src={fleet.image_url}
-                      alt={fleet.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      loading="lazy"
-                    />
+                    <>
+                      <img
+                        src={fleet.image_url}
+                        alt={fleet.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                        <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg" />
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Car className="w-12 h-12 md:w-16 md:h-16 text-muted-foreground/30" />
@@ -168,11 +179,11 @@ const PremiumServices = () => {
                 </div>
                 {/* Info */}
                 <div className="p-3 md:p-4">
-                  <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight mb-1 truncate">
+                  <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight mb-1">
                     {fleet.name}
                   </h4>
                   {fleet.description && (
-                    <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">{fleet.description}</p>
+                    <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">{fleet.description}</p>
                   )}
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 rounded-full">
                     <Users className="w-3 h-3 text-primary" />
@@ -194,6 +205,36 @@ const PremiumServices = () => {
         </div>
       </div>
     </section>
+
+    {/* Fleet Image Lightbox */}
+    <Dialog open={!!selectedFleet} onOpenChange={() => setSelectedFleet(null)}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-border rounded-2xl">
+        {selectedFleet && (
+          <div className="flex flex-col">
+            <div className="relative bg-muted">
+              <img
+                src={selectedFleet.image_url!}
+                alt={selectedFleet.name}
+                className="w-full max-h-[70vh] object-contain"
+              />
+            </div>
+            <div className="p-4 md:p-6">
+              <h3 className="font-display text-lg md:text-xl font-bold text-foreground mb-1">
+                {selectedFleet.name}
+              </h3>
+              {selectedFleet.description && (
+                <p className="text-sm text-muted-foreground mb-2">{selectedFleet.description}</p>
+              )}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full">
+                <Users className="w-3.5 h-3.5 text-primary" />
+                <span className="text-sm font-medium text-primary">{selectedFleet.capacity}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
