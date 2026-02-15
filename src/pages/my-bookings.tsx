@@ -233,13 +233,13 @@ const MyBookings = () => {
 
       <main className="container px-4 sm:px-6 py-6">
         {/* Real-time indicator */}
-        <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          Update real-time aktif
-        </div>
+        
+
+
+
+
+
+
 
         {isLoading ?
         <div className="space-y-4">
