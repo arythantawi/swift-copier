@@ -123,12 +123,12 @@ const Auth = () => {
       </div>
 
       {/* Container */}
-      <div className={`bg-card rounded-xl shadow-2xl relative overflow-hidden w-full max-w-[768px] min-h-[480px] transition-all duration-600 ${isRightPanelActive ? "right-panel-active" : ""}`} style={{
+      <div className={`bg-card rounded-xl shadow-2xl relative overflow-hidden w-full max-w-[900px] min-h-[480px] transition-all duration-600 ${isRightPanelActive ? "right-panel-active" : ""}`} style={{
       boxShadow: "0 14px 28px rgba(0,0,0,0.15), 0 10px 10px rgba(0,0,0,0.12)"
     }}>
         {/* Sign Up Form */}
         <div className={`absolute top-0 h-full transition-all duration-600 ease-in-out left-0 w-1/2 ${isRightPanelActive ? "translate-x-full opacity-100 z-[5] animate-show" : "opacity-0 z-[1]"}`}>
-          <form onSubmit={handleSignUp} className="bg-card flex items-center justify-center flex-col px-8 md:px-12 h-full text-center">
+          <form onSubmit={handleSignUp} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 h-full text-center w-full">
             <h1 className="font-bold text-2xl text-foreground mb-2">Buat Akun</h1>
 
             <div className="flex gap-3 my-4">
@@ -164,7 +164,7 @@ const Auth = () => {
 
         {/* Sign In Form */}
         <div className={`absolute top-0 h-full transition-all duration-600 ease-in-out left-0 w-1/2 z-[2] ${isRightPanelActive ? "translate-x-full" : ""}`}>
-          <form onSubmit={handleSignIn} className="bg-card flex items-center justify-center flex-col px-8 md:px-12 h-full text-center">
+          <form onSubmit={handleSignIn} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 h-full text-center w-full">
             <h1 className="font-bold text-2xl text-foreground mb-2">Masuk</h1>
 
             <div className="flex gap-3 my-4">
