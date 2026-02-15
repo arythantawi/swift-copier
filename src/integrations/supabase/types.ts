@@ -269,6 +269,45 @@ export type Database = {
         }
         Relationships: []
       }
+      fleet_vehicles: {
+        Row: {
+          capacity: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_drive_id: string | null
+          image_url: string | null
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          capacity: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_drive_id?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_drive_id?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string | null

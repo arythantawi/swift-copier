@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Crown, Car, Heart, Plane, Users, Briefcase, MapPin, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,70 +16,59 @@ const eventServices = [
   { icon: Sparkles, label: "Private Wisata" },
 ];
 
-const fleets = [
-  { name: "Avanza", capacity: "6 Seat" },
-  { name: "All New Xenia", capacity: "6 Seat" },
-  { name: "Innova Reborn", capacity: "6 Seat" },
-  { name: "Hiace Commuter/Premio", capacity: "14 Seat" },
-  { name: "Elf Long", capacity: "19 Seat" },
+interface FleetVehicle {
+  id: string;
+  name: string;
+  capacity: string;
+  image_url: string | null;
+  description: string | null;
+}
+
+const fallbackFleets = [
+  { id: "1", name: "Avanza", capacity: "6 Seat", image_url: null, description: null },
+  { id: "2", name: "All New Xenia", capacity: "6 Seat", image_url: null, description: null },
+  { id: "3", name: "Innova Reborn", capacity: "6 Seat", image_url: null, description: null },
+  { id: "4", name: "Hiace Commuter/Premio", capacity: "14 Seat", image_url: null, description: null },
+  { id: "5", name: "Elf Long", capacity: "19 Seat", image_url: null, description: null },
 ];
 
 const PremiumServices = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const [fleets, setFleets] = useState<FleetVehicle[]>(fallbackFleets);
+
+  useEffect(() => {
+    const fetchFleets = async () => {
+      const { data } = await supabase
+        .from('fleet_vehicles')
+        .select('id, name, capacity, image_url, description')
+        .eq('is_active', true)
+        .order('display_order');
+      if (data && data.length > 0) setFleets(data);
+    };
+    fetchFleets();
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(".premium-title", {
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 80%",
-        },
-        y: 40,
-        opacity: 0,
-        duration: 0.8,
-        ease: "power3.out",
+        scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
+        y: 40, opacity: 0, duration: 0.8, ease: "power3.out",
       });
-
       gsap.from(".premium-card", {
-        scrollTrigger: {
-          trigger: ".premium-grid",
-          start: "top 85%",
-        },
-        y: 50,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.15,
-        ease: "power2.out",
-        clearProps: "all",
+        scrollTrigger: { trigger: ".premium-grid", start: "top 85%" },
+        y: 50, opacity: 0, duration: 0.6, stagger: 0.15, ease: "power2.out", clearProps: "all",
       });
-
       gsap.from(".event-badge", {
-        scrollTrigger: {
-          trigger: ".events-container",
-          start: "top 90%",
-        },
-        scale: 0.8,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.08,
-        ease: "back.out(1.7)",
+        scrollTrigger: { trigger: ".events-container", start: "top 90%" },
+        scale: 0.8, opacity: 0, duration: 0.4, stagger: 0.08, ease: "back.out(1.7)",
       });
-
-      gsap.from(".fleet-item", {
-        scrollTrigger: {
-          trigger: ".fleet-container",
-          start: "top 90%",
-        },
-        x: -30,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.1,
-        ease: "power2.out",
+      gsap.from(".fleet-card", {
+        scrollTrigger: { trigger: ".fleet-container", start: "top 90%" },
+        y: 40, opacity: 0, duration: 0.5, stagger: 0.1, ease: "power2.out",
       });
     }, sectionRef);
-
     return () => ctx.revert();
-  }, []);
+  }, [fleets]);
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
@@ -102,64 +92,77 @@ const PremiumServices = () => {
           </p>
         </div>
 
-        <div className="premium-grid grid md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 max-w-6xl mx-auto">
-          {/* Support Acara Card */}
-          <div className="premium-card bg-card rounded-xl md:rounded-2xl p-5 md:p-6 lg:p-8 border border-border shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <Car className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-display text-base md:text-xl font-bold text-foreground">Support Acara</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Layanan untuk berbagai kebutuhan</p>
-              </div>
+        {/* Support Acara */}
+        <div className="premium-card bg-card rounded-xl md:rounded-2xl p-5 md:p-6 lg:p-8 border border-border shadow-lg max-w-4xl mx-auto mb-8 md:mb-12">
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+              <Car className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-
-            <div className="events-container grid grid-cols-2 gap-2 md:gap-3">
-              {eventServices.map((service, index) => (
-                <div
-                  key={index}
-                  className="event-badge flex items-center gap-1.5 md:gap-2 p-2 md:p-3 bg-white rounded-lg md:rounded-xl hover:bg-secondary/20 transition-colors cursor-default border border-border"
-                >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-md md:rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <service.icon className="w-3 h-3 md:w-4 md:h-4 text-primary" />
-                  </div>
-                  <span className="text-xs md:text-sm font-medium text-foreground truncate">{service.label}</span>
+            <div>
+              <h3 className="font-display text-base md:text-xl font-bold text-foreground">Support Acara</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">Layanan untuk berbagai kebutuhan</p>
+            </div>
+          </div>
+          <div className="events-container grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+            {eventServices.map((service, index) => (
+              <div key={index} className="event-badge flex items-center gap-1.5 md:gap-2 p-2 md:p-3 bg-white rounded-lg md:rounded-xl hover:bg-secondary/20 transition-colors cursor-default border border-border">
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-md md:rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <service.icon className="w-3 h-3 md:w-4 md:h-4 text-primary" />
                 </div>
-              ))}
+                <span className="text-xs md:text-sm font-medium text-foreground truncate">{service.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Ready Armada - Aesthetic Cards */}
+        <div className="premium-card max-w-6xl mx-auto">
+          <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-8 justify-center">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-accent-foreground" />
+            </div>
+            <div>
+              <h3 className="font-display text-base md:text-xl font-bold text-foreground">Ready Armada</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">Pilihan kendaraan lengkap</p>
             </div>
           </div>
 
-          {/* Ready Armada Card */}
-          <div className="premium-card bg-card rounded-xl md:rounded-2xl p-5 md:p-6 lg:p-8 border border-border shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-accent-foreground" />
-              </div>
-              <div>
-                <h3 className="font-display text-base md:text-xl font-bold text-foreground">Ready Armada</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Pilihan kendaraan lengkap</p>
-              </div>
-            </div>
-
-            <div className="fleet-container space-y-2 md:space-y-3">
-              {fleets.map((fleet, index) => (
-                <div
-                  key={index}
-                  className="fleet-item flex items-center justify-between p-3 md:p-4 bg-white rounded-lg md:rounded-xl hover:bg-secondary/20 transition-colors border border-border"
-                >
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-md md:rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                      <Car className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+          <div className="fleet-container grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            {fleets.map((fleet) => (
+              <div
+                key={fleet.id}
+                className="fleet-card group relative bg-card rounded-2xl border border-border overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
+              >
+                {/* Image */}
+                <div className="aspect-[4/3] bg-gradient-to-br from-muted/80 to-muted overflow-hidden">
+                  {fleet.image_url ? (
+                    <img
+                      src={fleet.image_url}
+                      alt={fleet.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Car className="w-12 h-12 md:w-16 md:h-16 text-muted-foreground/30" />
                     </div>
-                    <span className="font-semibold text-foreground text-sm md:text-base">{fleet.name}</span>
-                  </div>
-                  <span className="text-xs md:text-sm text-muted-foreground bg-background px-2 md:px-3 py-0.5 md:py-1 rounded-full">
-                    {fleet.capacity}
-                  </span>
+                  )}
                 </div>
-              ))}
-            </div>
+                {/* Info */}
+                <div className="p-3 md:p-4">
+                  <h4 className="font-semibold text-foreground text-sm md:text-base leading-tight mb-1 truncate">
+                    {fleet.name}
+                  </h4>
+                  {fleet.description && (
+                    <p className="text-xs text-muted-foreground mb-1.5 line-clamp-1">{fleet.description}</p>
+                  )}
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 rounded-full">
+                    <Users className="w-3 h-3 text-primary" />
+                    <span className="text-xs font-medium text-primary">{fleet.capacity}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
