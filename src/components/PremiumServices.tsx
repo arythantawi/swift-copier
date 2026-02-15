@@ -49,10 +49,17 @@ const PremiumServices = () => {
   }, []);
 
   useEffect(() => {
+    // Ensure fleet cards are visible first
+    const fleetCards = document.querySelectorAll('.fleet-card');
+    fleetCards.forEach(el => {
+      (el as HTMLElement).style.opacity = '1';
+      (el as HTMLElement).style.transform = 'none';
+    });
+
     const ctx = gsap.context(() => {
       gsap.from(".premium-title", {
         scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
-        y: 40, opacity: 0, duration: 0.8, ease: "power3.out",
+        y: 40, opacity: 0, duration: 0.8, ease: "power3.out", clearProps: "all",
       });
       gsap.from(".premium-card", {
         scrollTrigger: { trigger: ".premium-grid", start: "top 85%" },
@@ -60,14 +67,25 @@ const PremiumServices = () => {
       });
       gsap.from(".event-badge", {
         scrollTrigger: { trigger: ".events-container", start: "top 90%" },
-        scale: 0.8, opacity: 0, duration: 0.4, stagger: 0.08, ease: "back.out(1.7)",
+        scale: 0.8, opacity: 0, duration: 0.4, stagger: 0.08, ease: "back.out(1.7)", clearProps: "all",
       });
-      gsap.from(".fleet-card", {
-        scrollTrigger: { trigger: ".fleet-container", start: "top 90%" },
-        y: 40, opacity: 0, duration: 0.5, stagger: 0.1, ease: "power2.out",
-      });
+      gsap.fromTo(".fleet-card",
+        { y: 40, opacity: 0 },
+        {
+          scrollTrigger: { trigger: ".fleet-container", start: "top 95%" },
+          y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out", clearProps: "all",
+        }
+      );
     }, sectionRef);
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      // Ensure visibility after cleanup
+      const cards = document.querySelectorAll('.fleet-card');
+      cards.forEach(el => {
+        (el as HTMLElement).style.opacity = '1';
+        (el as HTMLElement).style.transform = 'none';
+      });
+    };
   }, [fleets]);
 
   const handleWhatsApp = () => {
