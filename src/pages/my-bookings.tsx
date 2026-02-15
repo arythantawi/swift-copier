@@ -5,20 +5,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Users, 
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
   Phone,
   CheckCircle2,
   Clock3,
   XCircle,
   AlertCircle,
   RefreshCw,
-  Loader2
-} from 'lucide-react';
+  Loader2 } from
+'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,14 +102,14 @@ const MyBookings = () => {
 
   const fetchBookings = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.
+      from('bookings').
+      select('*').
+      eq('user_id', user.id).
+      order('created_at', { ascending: false });
 
       if (error) throw error;
       setBookings(data || []);
@@ -135,46 +135,46 @@ const MyBookings = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('user-bookings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'bookings',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Booking update received:', payload);
-          
-          if (payload.eventType === 'UPDATE') {
-            setBookings(prev => 
-              prev.map(booking => 
-                booking.id === payload.new.id 
-                  ? { ...booking, ...payload.new as Booking }
-                  : booking
-              )
-            );
-            
-            const newStatus = (payload.new as Booking).payment_status;
-            const oldStatus = (payload.old as Booking).payment_status;
-            
-            if (newStatus !== oldStatus) {
-              const statusConfig = getStatusConfig(newStatus);
-              toast({
-                title: 'Status Pesanan Diperbarui',
-                description: `Pesanan ${(payload.new as Booking).order_id} sekarang ${statusConfig.label}`,
-              });
-            }
-          } else if (payload.eventType === 'INSERT') {
-            setBookings(prev => [payload.new as Booking, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setBookings(prev => prev.filter(b => b.id !== payload.old.id));
+    const channel = supabase.
+    channel('user-bookings-changes').
+    on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'bookings',
+        filter: `user_id=eq.${user.id}`
+      },
+      (payload) => {
+        console.log('Booking update received:', payload);
+
+        if (payload.eventType === 'UPDATE') {
+          setBookings((prev) =>
+          prev.map((booking) =>
+          booking.id === payload.new.id ?
+          { ...booking, ...(payload.new as Booking) } :
+          booking
+          )
+          );
+
+          const newStatus = (payload.new as Booking).payment_status;
+          const oldStatus = (payload.old as Booking).payment_status;
+
+          if (newStatus !== oldStatus) {
+            const statusConfig = getStatusConfig(newStatus);
+            toast({
+              title: 'Status Pesanan Diperbarui',
+              description: `Pesanan ${(payload.new as Booking).order_id} sekarang ${statusConfig.label}`
+            });
           }
+        } else if (payload.eventType === 'INSERT') {
+          setBookings((prev) => [payload.new as Booking, ...prev]);
+        } else if (payload.eventType === 'DELETE') {
+          setBookings((prev) => prev.filter((b) => b.id !== payload.old.id));
         }
-      )
-      .subscribe();
+      }
+    ).
+    subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -193,8 +193,8 @@ const MyBookings = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -208,8 +208,8 @@ const MyBookings = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/')}
-                className="mr-2"
-              >
+                className="mr-2">
+
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div className="w-8 h-8 rounded-full border-2 border-primary/50 bg-white/90 p-0.5 shadow-sm">
@@ -222,8 +222,8 @@ const MyBookings = () => {
               size="sm"
               onClick={fetchBookings}
               disabled={isLoading}
-              className="gap-2"
-            >
+              className="gap-2">
+
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
@@ -241,10 +241,10 @@ const MyBookings = () => {
           Update real-time aktif
         </div>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <Card key={i}>
+        {isLoading ?
+        <div className="space-y-4">
+            {[1, 2, 3].map((i) =>
+          <Card key={i}>
                 <CardHeader>
                   <Skeleton className="h-6 w-40" />
                 </CardHeader>
@@ -254,10 +254,10 @@ const MyBookings = () => {
                   <Skeleton className="h-4 w-1/2" />
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        ) : bookings.length === 0 ? (
-          <Card className="text-center py-12">
+          )}
+          </div> :
+        bookings.length === 0 ?
+        <Card className="text-center py-12">
             <CardContent>
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
                 <Calendar className="w-8 h-8 text-muted-foreground" />
@@ -270,15 +270,15 @@ const MyBookings = () => {
                 <Link to="/#rute">Lihat Rute</Link>
               </Button>
             </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {bookings.map(booking => {
-              const statusConfig = getStatusConfig(booking.payment_status);
-              const StatusIcon = statusConfig.icon;
-              
-              return (
-                <Card key={booking.id} className="overflow-hidden">
+          </Card> :
+
+        <div className="space-y-4">
+            {bookings.map((booking) => {
+            const statusConfig = getStatusConfig(booking.payment_status);
+            const StatusIcon = statusConfig.icon;
+
+            return (
+              <Card key={booking.id} className="overflow-hidden">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -301,9 +301,9 @@ const MyBookings = () => {
                       <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                       <div className="text-sm">
                         <p className="font-medium">{booking.route_from} → {booking.route_to}</p>
-                        {booking.route_via && (
-                          <p className="text-muted-foreground text-xs">via {booking.route_via}</p>
-                        )}
+                        {booking.route_via &&
+                      <p className="text-muted-foreground text-xs">via {booking.route_via}</p>
+                      }
                       </div>
                     </div>
 
@@ -338,34 +338,34 @@ const MyBookings = () => {
                     </div>
 
                     {/* Payment Proof Status */}
-                    {booking.payment_proof_url && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 p-2 rounded-md">
+                    {booking.payment_proof_url &&
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-md bg-primary-foreground">
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
                         Bukti pembayaran sudah diupload
                       </div>
-                    )}
+                  }
 
                     {/* Notes */}
-                    {booking.notes && (
-                      <div className="text-sm bg-secondary/30 p-3 rounded-md">
+                    {booking.notes &&
+                  <div className="text-sm bg-secondary/30 p-3 rounded-md">
                         <p className="text-xs text-muted-foreground mb-1">Catatan:</p>
                         <p className="text-sm">{booking.notes}</p>
                       </div>
-                    )}
+                  }
 
                     {/* Contact for pending bookings */}
-                    {booking.payment_status === 'pending' && (
-                      <div className="flex items-center gap-2 text-sm bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 p-3 rounded-md">
+                    {booking.payment_status === 'pending' &&
+                  <div className="flex items-center gap-2 text-sm bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 p-3 rounded-md">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         <p>Silakan upload bukti pembayaran atau hubungi admin untuk konfirmasi.</p>
                       </div>
-                    )}
+                  }
                   </CardContent>
-                </Card>
-              );
-            })}
+                </Card>);
+
+          })}
           </div>
-        )}
+        }
 
         {/* Help Section */}
         <Card className="mt-8 bg-primary/5 border-primary/20">
@@ -389,8 +389,8 @@ const MyBookings = () => {
           </CardContent>
         </Card>
       </main>
-    </div>
-  );
+    </div>);
+
 };
 
 export default MyBookings;
