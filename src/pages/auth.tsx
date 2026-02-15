@@ -193,6 +193,13 @@ const Auth = () => {
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               Masuk
             </button>
+
+            <p className="text-sm text-muted-foreground mt-4">
+              Belum punya akun?{' '}
+              <button type="button" onClick={() => setIsRightPanelActive(true)} className="text-primary font-semibold hover:underline">
+                Daftar
+              </button>
+            </p>
           </form>
         </div>
 
