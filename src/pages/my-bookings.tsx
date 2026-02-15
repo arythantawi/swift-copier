@@ -18,7 +18,9 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
-  Download } from
+  Download,
+  Star,
+  MessageSquare } from
 'lucide-react';
 import { generateTicketPdf } from '@/lib/generateTicketPdf';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +93,7 @@ const getStatusConfig = (status: string) => {
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -107,14 +110,14 @@ const MyBookings = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.
-      from('bookings').
-      select('*').
-      eq('user_id', user.id).
-      order('created_at', { ascending: false });
+      const [bookingsRes, testimonialsRes] = await Promise.all([
+        supabase.from('bookings').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('testimonials').select('booking_id').eq('user_id', user.id)
+      ]);
 
-      if (error) throw error;
-      setBookings(data || []);
+      if (bookingsRes.error) throw bookingsRes.error;
+      setBookings(bookingsRes.data || []);
+      setReviewedBookingIds((testimonialsRes.data || []).map(t => t.booking_id).filter(Boolean) as string[]);
     } catch (error: any) {
       console.error('Error fetching bookings:', error);
       toast({
@@ -373,6 +376,33 @@ const MyBookings = () => {
                         <Download className="w-4 h-4" />
                         Download Tiket
                       </Button>
+                  }
+
+                    {/* Review CTA for confirmed bookings */}
+                    {(booking.payment_status === 'paid' || booking.payment_status === 'confirmed') && !reviewedBookingIds.includes(booking.id) &&
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-accent/50 border border-accent">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Star className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Bagaimana perjalanan Anda?</p>
+                          <p className="text-xs text-muted-foreground">Berikan ulasan untuk membantu penumpang lain</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="gap-1 shrink-0" asChild>
+                          <Link to="/profile#ulasan">
+                            <MessageSquare className="w-3 h-3" />
+                            Tulis Ulasan
+                          </Link>
+                        </Button>
+                      </div>
+                  }
+
+                    {/* Already reviewed indicator */}
+                    {(booking.payment_status === 'paid' || booking.payment_status === 'confirmed') && reviewedBookingIds.includes(booking.id) &&
+                  <div className="flex items-center gap-2 text-xs text-green-600 p-2 rounded-md bg-green-50">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Anda sudah memberikan ulasan untuk pesanan ini
+                      </div>
                   }
 
                     {/* Notes */}
