@@ -901,6 +901,52 @@ const AdminContent = () => {
             </div>
           )}
         </TabsContent>
+
+        {/* Legal Pages Tab */}
+        <TabsContent value="legal" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Halaman Legal</h3>
+            <Button variant="outline" size="sm" onClick={fetchLegalPages}>
+              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+            </Button>
+          </div>
+          {legalLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Memuat...</div>
+          ) : (
+            <div className="grid gap-4">
+              {legalPages.map((page) => (
+                <div key={page.id} className="p-5 rounded-xl border border-border bg-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <div>
+                        <h4 className="font-semibold">{page.title}</h4>
+                        <p className="text-xs text-muted-foreground">slug: {page.slug}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={page.is_active ? "default" : "secondary"}>
+                        {page.is_active ? "Aktif" : "Nonaktif"}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingLegal(page);
+                          setLegalForm({ title: page.title, content: page.content, is_active: page.is_active });
+                          setLegalDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap">{page.content.substring(0, 200)}...</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Banner Dialog */}
@@ -1242,51 +1288,6 @@ const AdminContent = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Legal Pages Tab */}
-      <TabsContent value="legal" className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Halaman Legal</h3>
-          <Button variant="outline" size="sm" onClick={fetchLegalPages}>
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-        </div>
-        {legalLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Memuat...</div>
-        ) : (
-          <div className="grid gap-4">
-            {legalPages.map((page) => (
-              <div key={page.id} className="p-5 rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <div>
-                      <h4 className="font-semibold">{page.title}</h4>
-                      <p className="text-xs text-muted-foreground">slug: {page.slug}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={page.is_active ? "default" : "secondary"}>
-                      {page.is_active ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingLegal(page);
-                        setLegalForm({ title: page.title, content: page.content, is_active: page.is_active });
-                        setLegalDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap">{page.content.substring(0, 200)}...</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </TabsContent>
 
       {/* Legal Page Edit Dialog */}
       <Dialog open={legalDialogOpen} onOpenChange={setLegalDialogOpen}>
