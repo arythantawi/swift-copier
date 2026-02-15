@@ -123,19 +123,18 @@ const Auth = () => {
       </div>
 
       {/* Container */}
-      <div className={`bg-card rounded-xl shadow-2xl relative overflow-hidden w-full max-w-[900px] min-h-[480px] transition-all duration-600 ${isRightPanelActive ? "right-panel-active" : ""}`} style={{
+      <div className="bg-card rounded-xl shadow-2xl relative overflow-hidden w-full max-w-[500px] min-h-[480px] transition-all duration-600" style={{
       boxShadow: "0 14px 28px rgba(0,0,0,0.15), 0 10px 10px rgba(0,0,0,0.12)"
     }}>
         {/* Sign Up Form */}
-        <div className={`absolute top-0 h-full transition-all duration-600 ease-in-out left-0 w-1/2 ${isRightPanelActive ? "translate-x-full opacity-100 z-[5] animate-show" : "opacity-0 z-[1]"}`}>
-          <form onSubmit={handleSignUp} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 h-full text-center w-full">
+        {isRightPanelActive && (
+          <form onSubmit={handleSignUp} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 py-10 text-center w-full">
             <h1 className="font-bold text-2xl text-foreground mb-2">Buat Akun</h1>
 
             <div className="flex gap-3 my-4">
               <button type="button" onClick={handleGoogleAuth} className="border border-border rounded-full w-10 h-10 flex items-center justify-center hover:bg-secondary transition-colors">
                 <GoogleLogo />
               </button>
-              
             </div>
 
             <span className="text-xs text-muted-foreground">atau gunakan email untuk pendaftaran</span>
@@ -159,12 +158,19 @@ const Auth = () => {
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               Daftar
             </button>
+
+            <p className="text-sm text-muted-foreground mt-4">
+              Sudah punya akun?{' '}
+              <button type="button" onClick={() => setIsRightPanelActive(false)} className="text-primary font-semibold hover:underline">
+                Masuk
+              </button>
+            </p>
           </form>
-        </div>
+        )}
 
         {/* Sign In Form */}
-        <div className={`absolute top-0 h-full transition-all duration-600 ease-in-out left-0 w-1/2 z-[2] ${isRightPanelActive ? "translate-x-full" : ""}`}>
-          <form onSubmit={handleSignIn} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 h-full text-center w-full">
+        {!isRightPanelActive && (
+          <form onSubmit={handleSignIn} className="bg-card flex items-center justify-center flex-col px-6 md:px-10 lg:px-16 py-10 text-center w-full">
             <h1 className="font-bold text-2xl text-foreground mb-2">Masuk</h1>
 
             <div className="flex gap-3 my-4">
@@ -201,56 +207,13 @@ const Auth = () => {
               </button>
             </p>
           </form>
-        </div>
-
-        {/* Overlay Container */}
-        <div className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-[100] ${isRightPanelActive ? "-translate-x-full" : ""}`}>
-          <div className={`bg-gradient-to-r from-primary to-accent text-primary-foreground relative -left-full h-full w-[200%] transition-transform duration-600 ease-in-out ${isRightPanelActive ? "translate-x-1/2" : "translate-x-0"}`}>
-            {/* Left Panel */}
-            <div className={`absolute flex items-center justify-center flex-col px-8 text-center top-0 h-full w-1/2 transition-transform duration-600 ease-in-out ${isRightPanelActive ? "translate-x-0" : "-translate-x-[20%]"}`}>
-              <h1 className="font-bold text-2xl mb-4">Selamat Datang!</h1>
-              <p className="text-sm leading-5 tracking-wide mb-6 opacity-90">
-                Untuk tetap terhubung dengan kami,silakan masuk dengan akun Anda
-              </p>
-              <button type="button" onClick={() => setIsRightPanelActive(false)} className="rounded-full bg-transparent border border-white text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white/10 active:scale-95">
-                Masuk
-              </button>
-            </div>
-
-            {/* Right Panel */}
-            <div className={`absolute flex items-center justify-center flex-col px-8 text-center top-0 h-full w-1/2 right-0 transition-transform duration-600 ease-in-out ${isRightPanelActive ? "translate-x-[20%]" : "translate-x-0"}`}>
-              <h1 className="font-bold text-2xl mb-4 text-center">Hallo sahabat trans </h1>
-              <p className="text-sm leading-5 tracking-wide mb-6 opacity-90">
-                Masukkan data Anda dan mulai perjalanan bersama kami
-              </p>
-              <button type="button" onClick={() => setIsRightPanelActive(true)} className="rounded-full bg-transparent border border-white text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-all hover:bg-white/10 active:scale-95">
-                Daftar
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Back to Home */}
       <button onClick={() => navigate("/")} className="mt-6 text-muted-foreground hover:text-primary text-sm transition-colors">
         ← Kembali ke Beranda
       </button>
-
-      <style>{`
-        @keyframes show {
-          0%, 49.99% {
-            opacity: 0;
-            z-index: 1;
-          }
-          50%, 100% {
-            opacity: 1;
-            z-index: 5;
-          }
-        }
-        .animate-show {
-          animation: show 0.6s;
-        }
-      `}</style>
     </div>;
 };
 export default Auth;
