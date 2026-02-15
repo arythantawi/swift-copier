@@ -384,7 +384,7 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="container px-4 sm:px-6 py-6">
+      <main className="container px-4 sm:px-6 py-6 bg-white min-h-screen">
         {/* Profile Card */}
         <Card className="mb-6">
           <CardContent className="pt-6">
