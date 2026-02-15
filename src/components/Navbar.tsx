@@ -31,9 +31,6 @@ const Navbar = () => {
     href: '#rute',
     label: 'Rute'
   }, {
-    href: '#pembayaran',
-    label: 'Pembayaran'
-  }, {
     href: '#kontak',
     label: 'Kontak'
   }];
