@@ -9,7 +9,8 @@ import {
   Tag,
   HelpCircle,
   Star,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react';
 import BannerPreview from './BannerPreview';
 import { Button } from '@/components/ui/button';
@@ -133,6 +134,13 @@ const convertGoogleDriveUrl = (url: string): string => {
 
 const AdminContent = () => {
   const [activeTab, setActiveTab] = useState('banners');
+
+  // Legal pages state
+  const [legalPages, setLegalPages] = useState<{ id: string; slug: string; title: string; content: string; is_active: boolean }[]>([]);
+  const [legalLoading, setLegalLoading] = useState(true);
+  const [editingLegal, setEditingLegal] = useState<{ id: string; slug: string; title: string; content: string; is_active: boolean } | null>(null);
+  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
+  const [legalForm, setLegalForm] = useState({ title: '', content: '', is_active: true });
   
   // Banners state
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -217,9 +225,19 @@ const AdminContent = () => {
     setTestimonialsLoading(false);
   };
 
+  // Legal pages fetch
+  const fetchLegalPages = async () => {
+    setLegalLoading(true);
+    const { data, error } = await supabase
+      .from('legal_pages')
+      .select('id, slug, title, content, is_active')
+      .order('slug');
+    if (!error) setLegalPages(data || []);
+    setLegalLoading(false);
+  };
+
   useEffect(() => {
-    // Fetch all admin data in parallel
-    Promise.all([fetchBanners(), fetchPromos(), fetchFaqs(), fetchTestimonials()]);
+    Promise.all([fetchBanners(), fetchPromos(), fetchFaqs(), fetchTestimonials(), fetchLegalPages()]);
   }, []);
 
   // Banner handlers
@@ -497,7 +515,7 @@ const AdminContent = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 max-w-lg">
+        <TabsList className="grid w-full grid-cols-5 max-w-2xl">
           <TabsTrigger value="banners" className="gap-2">
             <Image className="w-4 h-4" />
             <span className="hidden sm:inline">Banner</span>
@@ -513,6 +531,10 @@ const AdminContent = () => {
           <TabsTrigger value="testimonials" className="gap-2">
             <MessageSquare className="w-4 h-4" />
             <span className="hidden sm:inline">Testimoni</span>
+          </TabsTrigger>
+          <TabsTrigger value="legal" className="gap-2">
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Legal</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1213,6 +1235,111 @@ const AdminContent = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setTestimonialDialogOpen(false)}>Batal</Button>
             <Button onClick={saveTestimonial} disabled={isSaving}>
+              {isSaving && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Legal Pages Tab */}
+      <TabsContent value="legal" className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Halaman Legal</h3>
+          <Button variant="outline" size="sm" onClick={fetchLegalPages}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+        {legalLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Memuat...</div>
+        ) : (
+          <div className="grid gap-4">
+            {legalPages.map((page) => (
+              <div key={page.id} className="p-5 rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <div>
+                      <h4 className="font-semibold">{page.title}</h4>
+                      <p className="text-xs text-muted-foreground">slug: {page.slug}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={page.is_active ? "default" : "secondary"}>
+                      {page.is_active ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingLegal(page);
+                        setLegalForm({ title: page.title, content: page.content, is_active: page.is_active });
+                        setLegalDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap">{page.content.substring(0, 200)}...</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </TabsContent>
+
+      {/* Legal Page Edit Dialog */}
+      <Dialog open={legalDialogOpen} onOpenChange={setLegalDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit {editingLegal?.title}</DialogTitle>
+            <DialogDescription>
+              Konten mendukung format Markdown sederhana (## heading, ### subheading, - list)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Judul</Label>
+              <Input value={legalForm.title} onChange={(e) => setLegalForm({ ...legalForm, title: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Konten</Label>
+              <Textarea
+                value={legalForm.content}
+                onChange={(e) => setLegalForm({ ...legalForm, content: e.target.value })}
+                rows={18}
+                className="font-mono text-sm"
+                placeholder="Tulis konten dengan format Markdown..."
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Aktif</Label>
+              <Switch checked={legalForm.is_active} onCheckedChange={(checked) => setLegalForm({ ...legalForm, is_active: checked })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLegalDialogOpen(false)}>Batal</Button>
+            <Button
+              disabled={isSaving}
+              onClick={async () => {
+                if (!editingLegal) return;
+                setIsSaving(true);
+                try {
+                  const { error } = await supabase
+                    .from('legal_pages')
+                    .update({ title: legalForm.title, content: legalForm.content, is_active: legalForm.is_active })
+                    .eq('id', editingLegal.id);
+                  if (error) throw error;
+                  toast.success('Halaman legal berhasil diperbarui');
+                  setLegalDialogOpen(false);
+                  fetchLegalPages();
+                } catch {
+                  toast.error('Gagal menyimpan');
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+            >
               {isSaving && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
               Simpan
             </Button>
