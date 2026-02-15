@@ -672,10 +672,10 @@ const HeroBanner = () => {
     : getAspectValue(currentAspectRatio, true);
 
   return (
-    <section ref={sectionRef} className="py-8 md:py-12 bg-background">
-      <div className="container">
+    <section ref={sectionRef} className="bg-background">
+      <div className="w-full">
         <div 
-          className="relative rounded-3xl overflow-hidden shadow-2xl"
+          className="relative overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onTouchStart={() => setIsHovered(true)}
