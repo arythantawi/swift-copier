@@ -1,6 +1,6 @@
 import { useEffect, useRef, forwardRef } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Phone, Mail, Clock, ArrowUpRight, Navigation } from "lucide-react";
+import { MapPin, Phone, Mail, ArrowUpRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import logo44Trans from "@/assets/logo-44trans.png";
@@ -83,21 +83,28 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
               </a>
             </div>
 
-            {/* Embedded Map */}
-            <div className="relative rounded-2xl overflow-hidden border border-background/10 shadow-2xl shadow-black/20 group">
-              <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-foreground/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-background/10">
-                <Navigation className="w-3.5 h-3.5 text-accent" />
-                <span className="text-xs font-semibold text-background/80">Kantor Pusat</span>
-              </div>
+            {/* Location Card: Address + Map unified */}
+            <div className="relative rounded-2xl overflow-hidden border border-background/10 shadow-2xl shadow-black/20 bg-background/5">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d247.3130409595236!2d112.71901594474912!3d-7.352923214642894!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7e4abc47489bb%3A0xb0ea2c2f0b20a3d4!2sJl.%20Letjend%20Sutoyo%20No.107%2C%20Bungur%2C%20Medaeng%2C%20Kec.%20Waru%2C%20Kabupaten%20Sidoarjo%2C%20Jawa%20Timur%2061256!5e0!3m2!1sid!2sid!4v1771153387255!5m2!1sid!2sid"
-                className="w-full h-48 sm:h-56 grayscale hover:grayscale-0 transition-all duration-700"
+                className="w-full h-44 sm:h-52 grayscale hover:grayscale-0 transition-all duration-700"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Lokasi Kantor 44 Trans"
               />
+              <div className="px-4 py-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-4 h-4 text-accent" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] text-background/40 uppercase tracking-wider font-semibold">Kantor Pusat</p>
+                  <p className="text-background/65 text-xs leading-relaxed">
+                    Jl. Letjend Sutoyo No.107, Bungur, Medaeng, Kec. Waru, Kab. Sidoarjo, Jawa Timur 61256
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -163,17 +170,6 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                     <p className="text-background text-sm font-semibold group-hover:text-accent transition-colors">info@travelminibus.com</p>
                   </div>
                 </a>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-background/35 uppercase tracking-wider font-medium">Alamat</p>
-                    <p className="text-background/70 text-xs leading-relaxed">
-                      Jl. Letjend Sutoyo No.107, Bungur, Medaeng, Kec. Waru, Kab. Sidoarjo, Jawa Timur 61256
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
