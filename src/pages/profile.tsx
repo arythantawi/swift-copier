@@ -351,7 +351,7 @@ const Profile = () => {
   const eligibleBookings = getEligibleBookings();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-secondary via-background to-secondary">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="bg-card/95 backdrop-blur-lg shadow-lg border-b border-border/50 sticky top-0 z-50">
         <div className="container px-4 sm:px-6">
