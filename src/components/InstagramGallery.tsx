@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Instagram, Sparkles } from 'lucide-react';
+import logo44trans from '@/assets/logo-44trans.png';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -135,8 +136,8 @@ const InstagramGallery = () => {
             {/* Top bar - mimics app header */}
             <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-muted/80 to-muted/40 border-b border-border/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Instagram className="w-5 h-5 text-primary-foreground" />
+                <div className="w-10 h-10 rounded-full overflow-hidden">
+                  <img src={logo44trans} alt="44 Trans Jawa Bali" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-bold text-foreground text-sm md:text-base">44transjawabali</p>
