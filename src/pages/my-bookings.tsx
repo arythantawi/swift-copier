@@ -17,8 +17,10 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Loader2 } from
+  Loader2,
+  Download } from
 'lucide-react';
+import { generateTicketPdf } from '@/lib/generateTicketPdf';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -343,6 +345,34 @@ const MyBookings = () => {
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
                         Bukti pembayaran sudah diupload
                       </div>
+                  }
+
+                    {/* Download Ticket Button for verified payments */}
+                    {(booking.payment_status === 'paid' || booking.payment_status === 'confirmed') &&
+                  <Button
+                        variant="default"
+                        className="w-full gap-2"
+                        onClick={() => generateTicketPdf({
+                          orderId: booking.order_id,
+                          customerName: booking.customer_name,
+                          customerPhone: booking.customer_phone,
+                          customerEmail: booking.customer_email,
+                          routeFrom: booking.route_from,
+                          routeTo: booking.route_to,
+                          routeVia: booking.route_via,
+                          travelDate: booking.travel_date,
+                          pickupTime: booking.pickup_time,
+                          pickupAddress: booking.pickup_address,
+                          dropoffAddress: booking.dropoff_address,
+                          passengers: booking.passengers,
+                          totalPrice: booking.total_price,
+                          notes: booking.notes,
+                          paymentStatus: booking.payment_status
+                        })}
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Tiket
+                      </Button>
                   }
 
                     {/* Notes */}
