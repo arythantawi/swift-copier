@@ -99,7 +99,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                   <MapPin className="w-4 h-4 text-accent" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-background/40 uppercase tracking-wider font-semibold">Kantor Pusat</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: '#f59f0a' }}>Kantor Pusat</p>
                   <p className="text-background/65 text-xs leading-relaxed">
                     Jl. Letjend Sutoyo No.107, Bungur, Medaeng, Kec. Waru, Kab. Sidoarjo, Jawa Timur 61256
                   </p>
@@ -113,7 +113,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
 
             {/* Routes */}
             <div>
-              <h4 className="font-display font-semibold text-sm uppercase tracking-widest text-background/40 mb-5">Rute Populer</h4>
+              <h4 className="font-display font-semibold text-sm uppercase tracking-widest mb-5" style={{ color: '#f59f0a' }}>Rute Populer</h4>
               <ul className="space-y-3">
                 {routes.map((route) => (
                   <li key={route}>
@@ -128,14 +128,14 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
 
             {/* Hours */}
             <div>
-              <h4 className="font-display font-semibold text-sm uppercase tracking-widest text-background/40 mb-5">Jam Operasional</h4>
+              <h4 className="font-display font-semibold text-sm uppercase tracking-widest mb-5" style={{ color: '#f59f0a' }}>Jam Operasional</h4>
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-background/5 border border-background/8">
-                  <p className="text-xs text-background/40 mb-1">Senin – Jumat</p>
+                  <p className="text-xs mb-1" style={{ color: '#f59f0a' }}>Senin – Jumat</p>
                   <p className="text-background font-semibold text-lg tracking-tight">06:00 – 22:00</p>
                 </div>
                 <div className="p-4 rounded-xl bg-background/5 border border-background/8">
-                  <p className="text-xs text-background/40 mb-1">Sabtu – Minggu</p>
+                  <p className="text-xs mb-1" style={{ color: '#f59f0a' }}>Sabtu – Minggu</p>
                   <p className="text-background font-semibold text-lg tracking-tight">07:00 – 21:00</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20">
@@ -150,7 +150,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
 
             {/* Contact */}
             <div>
-              <h4 className="font-display font-semibold text-sm uppercase tracking-widest text-background/40 mb-5">Kontak</h4>
+              <h4 className="font-display font-semibold text-sm uppercase tracking-widest mb-5" style={{ color: '#f59f0a' }}>Kontak</h4>
               <div className="space-y-5">
                 <a href="tel:+6281233330042" className="flex items-start gap-3 group">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors flex-shrink-0">
