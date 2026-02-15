@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-whatsapp-ticket]
 verify_jwt = false
+
+[functions.upload-fleet-image]
+verify_jwt = false

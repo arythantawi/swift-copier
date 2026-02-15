@@ -48,6 +48,7 @@ const managementItems = [
 
 const websiteItems = [
   { id: 'schedules', title: 'Jadwal', icon: Calendar },
+  { id: 'fleet', title: 'Armada', icon: Truck },
   { id: 'content', title: 'Konten', icon: LayoutGrid },
   { id: 'videos', title: 'Video', icon: Play },
 ];

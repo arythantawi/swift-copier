@@ -20,6 +20,7 @@ import AdminVideos from '@/components/admin/AdminVideos';
 
 import AdminDatabase from '@/components/admin/AdminDatabase';
 import AdminUsers from '@/components/admin/AdminUsers';
+import AdminFleet from '@/components/admin/AdminFleet';
 import ReportFinance from '@/components/admin/ReportFinance';
 import ReportPassengers from '@/components/admin/ReportPassengers';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
@@ -43,6 +44,8 @@ const Admin = () => {
         return <AdminManifest />;
       case 'schedules':
         return <AdminSchedules />;
+      case 'fleet':
+        return <AdminFleet />;
       case 'operations':
         return <AdminOperations />;
       case 'analytics':
@@ -69,6 +72,7 @@ const Admin = () => {
       case 'bookings': return 'Pesanan';
       case 'manifest': return 'Manifes';
       case 'schedules': return 'Jadwal';
+      case 'fleet': return 'Kelola Armada';
       case 'operations': return 'Operasional';
       case 'analytics': return 'Analisa Data';
       case 'content': return 'Manajemen Konten';
