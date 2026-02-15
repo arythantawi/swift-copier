@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 // Order ID format validation:
 // - New: TRV-YYYYMMDD-XXXX
 // - Legacy: TRV-<13 digit timestamp>
-const ORDER_ID_REGEX = /^TRV-(?:\d{8}-[A-Z0-9]{4}|\d{13})$/;
+const ORDER_ID_REGEX = /^TRV-(?:\d{8}-[A-Z0-9]{4,12}|\d{13})$/;
 
 function checkRateLimit(clientIP: string): boolean {
   const now = Date.now();
